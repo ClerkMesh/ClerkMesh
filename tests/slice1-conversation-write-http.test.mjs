@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createConversationServer } from "../apps/web/server/src/conversation-server.mjs";
 import { createConversationWriteCoordinator } from "../apps/web/server/src/conversation-write-coordinator.mjs";
+import { createConversationWriteLease } from "../apps/web/server/src/conversation-write-lease.mjs";
 
 const root = await mkdtemp(join(tmpdir(), "clerkmesh-write-http-"));
 const firstmate = join(root, "firstmate");
@@ -25,10 +26,13 @@ const coordinator = createConversationWriteCoordinator({
     return { queued: true };
   },
 });
+const writeLease = createConversationWriteLease();
+writeLease.connect("browser-a");
 const app = createConversationServer({
   firstmateRoot: firstmate,
   listSessions: async () => [],
   writeCoordinator: coordinator,
+  writeLease,
 });
 const payload = {
   clientToken: "browser-a",
