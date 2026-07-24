@@ -165,6 +165,8 @@ start_tui() {
     i=$((i + 1))
   done
   [ -n "$TUI_PI_PID" ] || fail "$CASE_LABEL could not identify the real TUI Pi child"
+  wait_tui_text '[Extensions]' || fail "$CASE_LABEL TUI did not reach its ready composer"
+  sleep 0.2
 }
 
 tui_capture() { "$TMUX" -L "$SOCKET" capture-pane -p -J -t "$TUI_SESSION" -S -10000 2>/dev/null || true; }
