@@ -110,8 +110,8 @@ Canonically classified Firstmate operational input remains an ordinary user-role
 The session-start nudge remains on its existing non-displayed custom-message path.
 Toggling off restores ordinary rendering, and `Ctrl+O` expansion behavior stays unchanged.
 Tool execution, input delivery, model context, session storage, diagnostics, and `/export` and `/share` operation remain unchanged.
-Exports and shares remain complete session artifacts, including current operational user messages and any legacy hidden custom messages retained in serialized session data and Pi 0.81.1's sidebar tree.
-Pi 0.81.1 still exposes no global transcript filter, so expanded reasoning, built-in tool images, user-bash rows, skill and summary rows, status notices, and arbitrary custom-tool or extension rows remain supported-API boundaries.
+Exports and shares remain complete session artifacts, including current operational user messages and any legacy hidden custom messages retained in serialized session data and Pi 0.82.0's sidebar tree.
+Pi 0.82.0 still exposes no global transcript filter, so expanded reasoning, built-in tool images, user-bash rows, skill and summary rows, status notices, and arbitrary custom-tool or extension rows remain supported-API boundaries.
 The version-scoped feasibility evidence and complete render taxonomy are recorded in [docs/calm-mode-feasibility.md](docs/calm-mode-feasibility.md).
 
 ### Talk to it

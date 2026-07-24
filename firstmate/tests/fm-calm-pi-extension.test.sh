@@ -126,7 +126,7 @@ test_home_resolution() {
     return 0
   fi
   version=$(node -p "require('$PI_PACKAGE_DIR/package.json').version")
-  [ "$version" = "0.81.1" ] || fail "Pi calm compatibility assumptions require Pi 0.81.1, found $version"
+  [ "$version" = "0.82.0" ] || fail "Pi calm compatibility assumptions require Pi 0.82.0, found $version"
 
   fixture="$TMP_ROOT/home-resolution"
   mkdir -p \
@@ -235,7 +235,7 @@ test_rendering_and_session_lifecycle() {
     return 0
   fi
   version=$(node -p "require('$PI_PACKAGE_DIR/package.json').version")
-  [ "$version" = "0.81.1" ] || fail "Pi calm compatibility assumptions require Pi 0.81.1, found $version"
+  [ "$version" = "0.82.0" ] || fail "Pi calm compatibility assumptions require Pi 0.82.0, found $version"
 
   fixture="$TMP_ROOT/renderer"
   mkdir -p "$fixture/home" "$fixture/lib" "$fixture/node_modules/@earendil-works"
@@ -886,7 +886,7 @@ test_operational_followup_turn_e2e() {
     return 0
   fi
   version=$(pi --version 2>/dev/null || true)
-  [ "$version" = "0.81.1" ] || fail "Pi operational follow-up E2E requires Pi 0.81.1, found $version"
+  [ "$version" = "0.82.0" ] || fail "Pi operational follow-up E2E requires Pi 0.82.0, found $version"
 
   project="$TMP_ROOT/followup-project"
   home="$TMP_ROOT/followup-home"
@@ -1239,7 +1239,7 @@ test_hidden_block_geometry_e2e() {
     return 0
   fi
   version=$(pi --version 2>/dev/null || true)
-  [ "$version" = "0.81.1" ] || fail "Pi Calm hidden-block geometry E2E requires Pi 0.81.1, found $version"
+  [ "$version" = "0.82.0" ] || fail "Pi Calm hidden-block geometry E2E requires Pi 0.82.0, found $version"
 
   project="$TMP_ROOT/geometry-project"
   home="$TMP_ROOT/geometry-home"
@@ -1479,7 +1479,7 @@ test_interactive_terminal_e2e() {
     return 0
   fi
   version=$(pi --version 2>/dev/null || true)
-  [ "$version" = "0.81.1" ] || fail "Pi calm interactive E2E requires Pi 0.81.1, found $version"
+  [ "$version" = "0.82.0" ] || fail "Pi calm interactive E2E requires Pi 0.82.0, found $version"
 
   project="$TMP_ROOT/e2e-project"
   config="$TMP_ROOT/e2e-config"
@@ -1680,10 +1680,14 @@ JSON
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/calm"
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
   active_screen_wait=0
+  # Pi 0.82 can render the cleared intermediate frame before rebuilding the
+  # retained conversation, so wait for both hiding and redraw completion.
   while [ "$active_screen_wait" -lt 120 ]; do
     tmux -L "$TMUX_SOCKET" capture-pane -p -t "$TMUX_SESSION" >"$hidden_snapshot"
     if ! grep -Fq "CALM_E2E_OUTPUT" "$hidden_snapshot" &&
-      ! grep -Fq "/calm" "$hidden_snapshot"; then
+      ! grep -Fq "/calm" "$hidden_snapshot" &&
+      grep -Fq "Show a deterministic tool example." "$hidden_snapshot" &&
+      grep -Fq "The deterministic tool example is complete." "$hidden_snapshot"; then
       break
     fi
     sleep 0.05
