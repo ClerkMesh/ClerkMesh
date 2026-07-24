@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# ClerkMesh launcher. Usage: clerkmesh init
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+CLERKMESH_ROOT=$(cd "$SCRIPT_DIR/.." && pwd -P)
+export CLERKMESH_ROOT
+export CLERKMESH_DATA="$CLERKMESH_ROOT/clerkmesh-data"
+export CLERKMESH_STATE="$CLERKMESH_ROOT/clerkmesh-state"
+export CLERKMESH_CLERKS="$CLERKMESH_ROOT/clerks"
+export CLERKMESH_CACHE="$CLERKMESH_ROOT/cache"
+export FM_ROOT_OVERRIDE="$CLERKMESH_ROOT/firstmate"
+export FM_HOME="$CLERKMESH_ROOT/firstmate"
+VERSION=1
+
+fatal() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+verify_provenance() {
+  [ -d "$FM_HOME" ] || fatal "vendored Firstmate directory is missing"
+  [ -f "$CLERKMESH_ROOT/firstmate.provenance.json" ] || fatal "Firstmate provenance is missing"
+  [ -f "$FM_HOME/LICENSE" ] || fatal "vendored Firstmate license is missing"
+  command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
+  command -v git >/dev/null 2>&1 || fatal "required dependency not found: git"
+  node - "$CLERKMESH_ROOT/firstmate.provenance.json" <<'NODE' || fatal "Firstmate provenance is invalid"
+const fs = require('fs');
+const p = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+for (const key of ['repository', 'defaultBranch', 'sourceCommit', 'vendoredAt', 'license', 'licenseFile', 'attribution']) {
+  if (typeof p[key] !== 'string' || !p[key]) process.exit(1);
+}
+if (!/^[0-9a-f]{40}$/.test(p.sourceCommit) || p.licenseFile !== 'firstmate/LICENSE') process.exit(1);
+NODE
+}
+
+has_entries() { [ -d "$1" ] && [ -n "$(find "$1" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; }
+
+init() {
+  verify_provenance
+  marker="$CLERKMESH_DATA/.clerkmesh-version"
+  if [ -e "$marker" ]; then
+    [ "$(cat "$marker")" = "$VERSION" ] || fatal "unsupported ClerkMesh state version"
+  else
+    for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+      "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
+      has_entries "$path" && fatal "unknown existing ClerkMesh state at $path"
+    done
+  fi
+
+  mkdir -p "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"
+  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"; do
+    [ -w "$path" ] || fatal "directory is not writable: $path"
+  done
+
+  escalation="$CLERKMESH_CLERKS/escalation"
+  if [ ! -d "$escalation/.git" ]; then
+    mkdir -p "$escalation"
+    cat > "$escalation/CLERK.md" <<'EOF'
+---
+name: escalation
+description: >-
+  Captain-executed work explicitly accepted when no specialist Clerk can safely cover the request; never selected automatically.
+execution: human
+---
+
+# Role
+Handle work only when the Captain explicitly chooses to take it over.
+
+# Capabilities
+Record Captain-executed outcomes for an explicitly selected execution.
+
+# Boundaries
+Never match requests automatically, spawn a Worker, or act as a generalist.
+
+# Working Style
+Keep the Captain's evidence and decisions explicit.
+
+# Instructions
+Wait for explicit Captain selection before every execution.
+
+# Context
+No additional capability material is available.
+EOF
+    git -C "$escalation" init -q -b main
+    git -C "$escalation" config user.name "ClerkMesh"
+    git -C "$escalation" config user.email "clerkmesh@localhost"
+    git -C "$escalation" add CLERK.md
+    git -C "$escalation" commit -q -m "Initialize built-in Escalation Clerk"
+  fi
+
+  if [ ! -f "$CLERKMESH_DATA/clerks.md" ]; then
+    printf '# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|\n| escalation | %s | active | true |\n' "$escalation" > "$CLERKMESH_DATA/clerks.md"
+  fi
+  printf '%s\n' "$VERSION" > "$marker"
+  printf 'ClerkMesh initialized at %s\n' "$CLERKMESH_ROOT"
+}
+
+case "${1:-}" in
+  init) [ "$#" -eq 1 ] || fatal "usage: clerkmesh init"; init ;;
+  *) fatal "usage: clerkmesh init" ;;
+esac
