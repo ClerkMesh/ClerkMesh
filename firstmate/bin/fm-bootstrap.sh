@@ -4,9 +4,10 @@
 #          Detect: prints one line per actionable problem, or an explicit
 #          BOOTSTRAP_INFO no-action fact for completed benign bootstrap work, and
 #          exits 0.
-#          Silent = all good.
+#          Silent = all good. Forge delivery readiness is deliberately excluded
+#          from ordinary bootstrap and belongs to fm-project-preflight.sh.
 #          Lines: "MISSING: <tool> (install: <command>)",
-#                 "MISSING_MANUAL: <tool> (instructions: <url>)", "NEEDS_GH_AUTH",
+#                 "MISSING_MANUAL: <tool> (instructions: <url>)",
 #                 "BACKEND_INVALID: <name> (known: <names>)",
 #                 "CREW_DISPATCH: invalid config/crew-dispatch.json - <reason>",
 #                 "FLEET_SYNC: <repo>: skipped|recovered|STUCK: <detail>",
@@ -46,8 +47,6 @@
 #          landed in the primary instead of its own worktree; restore it per the line.
 #          treehouse is also MISSING when its installed version lacks
 #          "treehouse get --lease" support.
-#          no-mistakes is also MISSING when its installed version is older than
-#          1.31.2.
 #          tasks-axi and quota-axi are required bootstrap tools (same class as
 #          lavish-axi). tasks-axi is also version and feature gated (0.1.1+
 #          with update --archive-body and mv [<id>...]); an installed but
@@ -511,11 +510,13 @@ missing_tool_diagnostic() {
 }
 
 # Required-tool detection follows the RESOLVED backend, not a one-size default:
-# a universal toolchain every home needs plus the backend-specific delta owned by
-# fm_backend_required_tools (bin/fm-backend.sh). So a herdr/zellij/cmux home is
-# never told tmux is missing, and only orca drops treehouse. A backend value with
-# no verified dependency set is reported before the universal checks continue.
-COMMON_TOOLS="node git gh no-mistakes gh-axi chrome-devtools-axi lavish-axi tasks-axi quota-axi"
+# a local control-plane toolchain every home needs plus the backend-specific delta
+# owned by fm_backend_required_tools (bin/fm-backend.sh). Forge delivery tools are
+# checked only by fm-project-preflight.sh for a remote delivery mode. So a
+# herdr/zellij/cmux home is never told tmux is missing, and only orca drops
+# treehouse. A backend value with no verified dependency set is reported before
+# the common checks continue.
+COMMON_TOOLS="node git chrome-devtools-axi lavish-axi tasks-axi quota-axi"
 BACKEND=$(fm_backend_name)
 BACKEND_VALID=1
 if ! BACKEND_TOOLS=$(fm_backend_required_tools "$BACKEND"); then
@@ -523,31 +524,9 @@ if ! BACKEND_TOOLS=$(fm_backend_required_tools "$BACKEND"); then
   BACKEND_TOOLS=""
 fi
 TOOLS="$BACKEND_TOOLS $COMMON_TOOLS"
-NO_MISTAKES_MIN_MAJOR=1
-NO_MISTAKES_MIN_MINOR=31
-NO_MISTAKES_MIN_PATCH=2
 
 treehouse_supports_lease() {
   treehouse get --help 2>&1 | grep -Eq '(^|[^[:alnum:]_-])--lease([^[:alnum:]_-]|$)'
-}
-
-no_mistakes_version_parts() {
-  local output
-  command -v no-mistakes >/dev/null 2>&1 || return 1
-  output=$(no-mistakes --version 2>/dev/null) || return 1
-  printf '%s\n' "$output" | sed -nE 's/.*[vV]?([0-9]+)\.([0-9]+)\.([0-9]+).*/\1 \2 \3/p' | head -n 1
-}
-
-no_mistakes_compatible() {
-  local parts major minor patch extra
-  parts=$(no_mistakes_version_parts) || return 1
-  IFS=' ' read -r major minor patch extra <<< "$parts"
-  [ -n "$major" ] && [ -n "$minor" ] && [ -n "$patch" ] && [ -z "$extra" ] || return 1
-  [ "$major" -gt "$NO_MISTAKES_MIN_MAJOR" ] && return 0
-  [ "$major" -eq "$NO_MISTAKES_MIN_MAJOR" ] || return 1
-  [ "$minor" -gt "$NO_MISTAKES_MIN_MINOR" ] && return 0
-  [ "$minor" -eq "$NO_MISTAKES_MIN_MINOR" ] || return 1
-  [ "$patch" -ge "$NO_MISTAKES_MIN_PATCH" ]
 }
 
 x_mode_write_if_changed() {
@@ -840,13 +819,9 @@ if fm_backend_list_contains "$TOOLS" treehouse \
   && command -v treehouse >/dev/null 2>&1 && ! treehouse_supports_lease; then
   echo "MISSING: treehouse (install: $(install_cmd treehouse))"
 fi
-if command -v no-mistakes >/dev/null 2>&1 && ! no_mistakes_compatible; then
-  echo "MISSING: no-mistakes (install: $(install_cmd no-mistakes))"
-fi
 if command -v tasks-axi >/dev/null 2>&1 && ! fm_tasks_axi_compatible; then
   echo "MISSING: tasks-axi (install: $(install_cmd tasks-axi))"
 fi
-gh auth status >/dev/null 2>&1 || echo "NEEDS_GH_AUTH"
 # Worktree-tangle check: the firstmate primary checkout (FM_ROOT) must sit on its
 # default branch, not a feature branch (see fm-tangle-lib.sh). Scoped to the
 # primary only; detached-HEAD worktrees and secondmate homes never trip it.

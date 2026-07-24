@@ -51,12 +51,13 @@ make_spawn_case() {
   shift 2
   case_dir="$TMP_ROOT/$name"
   home="$case_dir/home"
-  proj="$case_dir/project"
+  proj="$home/projects/project"
   wt="$case_dir/wt"
   launchlog="$case_dir/launch.log"
   fakebin=$(make_spawn_fakebin "$case_dir/fake")
   mkdir -p "$home/data" "$home/projects" "$home/state" "$home/config"
   printf '%s\n' "$harness" > "$home/config/crew-harness"
+  printf '%s\n' '- project [local-only] - dispatch fixture (added 2026-07-24)' > "$home/data/projects.md"
   fm_git_worktree "$proj" "$wt" "wt-$name"
   touch "$home/state/.last-watcher-beat"
   for id in "$@"; do

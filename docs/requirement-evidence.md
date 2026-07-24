@@ -18,6 +18,10 @@ A requirement is marked complete only when the linked commands and artifacts are
 | G0-001 | complete | `tests/init.test.sh` passes clean and byte-idempotent repeated init plus the isolated 18-case unknown/conflict/repair matrix | `evidence/gate-0/init.md` |
 | G0-002 | complete | `tests/gate0-tracking.test.sh` validates root tracking, nested-Git/submodule/subtree/patch-stack rejection, provenance invariants, and runtime exclusion | `evidence/gate-0/provenance.md` |
 | G0-003 | partial | `tests/gate0-lock.test.sh` proves a live Pi holder is not overwritten; upstream `fm-session-start.test.sh` proves lock refusal suppresses mutations | `evidence/gate-0/lock-liveness.md`; real Web/TUI Pi competition remains |
+| G0-004 | complete | `tests/gate0-no-forge.test.sh` isolates `HOME`/Git config, restricts `PATH`, uses forge executables only as failing invocation tripwires, and drives real session-start, Project preflight, local Git, and spawn-refusal paths | `evidence/gate-0/no-forge.md` |
+| PROJ-003 | partial | The G0-004 test proves ordinary startup makes no forge readiness probe and dispatch preflight is mode-specific | Add/switch mode entrypoints remain Slice 3 work |
+| PROJ-004 | partial | `fm-spawn.sh` calls `fm-project-preflight.sh`; G0-004 proves auth refusal occurs before worktree/endpoint/meta creation | Primary-side preflight invocation remains |
+| COMP-005 | partial | G0-004 proves startup and local-only preflight need no forge account/auth while explicit remote modes fail closed | Full real local-only lifecycle remains CERT-004/Slice 3 |
 | G0-005 | complete | `corepack pnpm run test:firstmate` passes all 96 upstream scripts with 0 failures and 15 declared gate skips; no failure was waived | `evidence/gate-0/firstmate-baseline.md`, focused fixture evidence, and the historical diagnostic artifact at `evidence/gate-0/artifacts/firstmate-baseline.json` |
 
 ## Stage status

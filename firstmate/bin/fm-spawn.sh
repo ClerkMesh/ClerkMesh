@@ -750,6 +750,11 @@ if [ "$KIND" = secondmate ]; then
   fi
 else
   PROJ_ABS="$(cd "$(resolve_project_dir_arg "$PROJ")" && pwd)"
+  PROJ_NAME=$(basename "$PROJ_ABS")
+  PREFLIGHT_OUT=$("$FM_ROOT/bin/fm-project-preflight.sh" "$PROJ_NAME") || exit 1
+  read -r MODE YOLO <<EOF
+$PREFLIGHT_OUT
+EOF
   WT=""
   BRIEF="$DATA/$ID/brief.md"
 fi
@@ -1295,11 +1300,6 @@ if [ "$KIND" = secondmate ]; then
   MODE=secondmate
   YOLO=off
   SECONDMATE_PROJECTS=$(secondmate_registry_value "$ID" projects || true)
-else
-  PROJ_NAME=$(basename "$PROJ_ABS")
-  read -r MODE YOLO <<EOF
-$("$FM_ROOT/bin/fm-project-mode.sh" "$PROJ_NAME")
-EOF
 fi
 
 META_WINDOW=$T

@@ -295,7 +295,7 @@ fm_backend_validate_spawn() {  # <name>
 }
 
 # fm_backend_required_tools: the backend-SPECIFIC CLI tools a firstmate home on
-# <backend> genuinely requires, beyond firstmate's universal toolchain (owned by
+# <backend> genuinely requires, beyond firstmate's common startup toolchain (owned by
 # docs/configuration.md "Toolchain" and bootstrap's COMMON list). This is the
 # single owner of the per-backend dependency delta, so bootstrap follows the
 # RESOLVED backend instead of demanding an inactive backend's tools. Each set is:

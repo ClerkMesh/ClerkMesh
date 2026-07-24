@@ -30,9 +30,11 @@ Do not overwrite or repurpose an existing path.
 
 Choose the delivery mode when adding or creating the project:
 
-- `no-mistakes` runs the full validation pipeline before a PR and is the default when the captain does not specify a mode.
+- `local-only` has no required remote or PR, lands only through the approved local fast-forward path, and is the default unless the captain explicitly authorizes remote delivery.
 - `direct-PR` pushes and opens a PR without the no-mistakes pipeline.
-- `local-only` has no required remote or PR and lands only through the approved local fast-forward path.
+- `no-mistakes` runs the full validation pipeline before a PR.
+
+Do not infer remote delivery intent from an existing `origin`. Before dispatch, run `bin/fm-project-preflight.sh <name>`; `fm-spawn.sh` runs the same read-only check as a mechanical backstop before creating a worktree, endpoint, Worker, or task metadata. A failed remote-mode preflight blocks only that Task and never downgrades its mode.
 
 The optional `+yolo` posture changes routine approval authority but does not change the delivery mode.
 Default it off, and enable it only on the captain's explicit instruction.
@@ -49,7 +51,7 @@ A `local-only` project may have no remote and skips no-mistakes initialization.
 ## Create a project
 
 Creating a GitHub repository is outward-facing.
-Before making that remote change, propose the repository name, owner or organization, visibility, and delivery mode, defaulting visibility to private and delivery mode to `no-mistakes`, then obtain the captain's explicit consent for those values.
+Before making that remote change, propose the repository name, owner or organization, visibility, and remote delivery mode, defaulting visibility to private, then obtain the captain's explicit consent for those values.
 Use `gh-axi` for the approved GitHub operation and consult its current help rather than relying on remembered flags.
 After remote creation succeeds, clone it locally, add the registry entry, and initialize it according to its delivery mode.
 

@@ -77,13 +77,15 @@ test_projects_path_scoping() {
     [ -n "$label" ] || continue
     home="$TMP_ROOT/$id home"
     projects="$TMP_ROOT/$id projects"
-    mkdir -p "$home/data" "$projects/alpha"
+    mkdir -p "$home/data" "$projects"
+    printf '%s\n' '- alpha [local-only] - path scoping fixture (added 2026-07-24)' > "$home/data/projects.md"
     if [ "$use_override" = yes ]; then
+      fm_git_init_commit "$projects/alpha"
       out=$(FM_ROOT_OVERRIDE='' FM_STATE_OVERRIDE='' FM_DATA_OVERRIDE='' FM_CONFIG_OVERRIDE='' \
         FM_HOME="$home" FM_PROJECTS_OVERRIDE="$projects" FM_SPAWN_NO_GUARD=1 \
         "$SPAWN" "$id" projects/alpha codex 2>&1)
     else
-      mkdir -p "$home/projects/alpha"
+      fm_git_init_commit "$home/projects/alpha"
       out=$(FM_ROOT_OVERRIDE='' FM_STATE_OVERRIDE='' FM_DATA_OVERRIDE='' FM_PROJECTS_OVERRIDE='' FM_CONFIG_OVERRIDE='' \
         FM_HOME="$home" FM_SPAWN_NO_GUARD=1 \
         "$SPAWN" "$id" projects/alpha codex 2>&1)

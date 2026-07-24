@@ -67,13 +67,14 @@ make_settle_case() {
   local name=$1 id=$2 stale_reads=$3 case_dir home proj wt stale fakebin countfile
   case_dir="$TMP_ROOT/$name"
   home="$case_dir/home"
-  proj="$case_dir/project"
+  proj="$home/projects/project"
   wt="$case_dir/wt"
   stale="$case_dir/stale-other-checkout"
   countfile="$case_dir/pane-call-count"
   fakebin=$(make_settle_fakebin "$case_dir/fake")
   mkdir -p "$home/data" "$home/projects" "$home/state" "$home/config"
   printf 'codex\n' > "$home/config/crew-harness"
+  printf '%s\n' '- project [local-only] - settle fixture (added 2026-07-24)' > "$home/data/projects.md"
   fm_git_worktree "$proj" "$wt" "wt-$name"
   fm_git_init_commit "$stale"
   mkdir -p "$home/data/$id"
