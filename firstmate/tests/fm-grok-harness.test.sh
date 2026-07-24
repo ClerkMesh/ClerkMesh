@@ -34,13 +34,14 @@ make_spawn_case() {
   local name=$1 case_dir home proj wt fakebin grok_home id
   case_dir="$TMP_ROOT/$name"
   home="$case_dir/home"
-  proj="$case_dir/project"
+  proj="$home/projects/project"
   wt="$case_dir/wt"
   fakebin=$(make_spawn_fakebin "$case_dir/fake")
   grok_home="$case_dir/grok"
   id="grok-$name-x1"
   mkdir -p "$home/data/$id" "$home/projects" "$home/state" "$home/config" "$grok_home"
   printf 'brief\n' > "$home/data/$id/brief.md"
+  printf '%s\n' '- project [local-only] - Grok harness fixture (added 2026-07-24)' > "$home/data/projects.md"
   fm_git_worktree "$proj" "$wt" "fm/$id"
   touch "$home/state/.last-watcher-beat"
   printf '%s\n' "$case_dir|$home|$proj|$wt|$fakebin|$grok_home|$id"

@@ -77,6 +77,13 @@ SH
   printf '%s\n' "$root"
 }
 
+register_local_spawn_project() {  # <data> <project>
+  local data=$1 project=$2 name
+  name=$(basename "$project")
+  mkdir -p "$data"
+  printf '%s\n' "- $name [local-only] - Orca spawn fixture (added 2026-07-24)" > "$data/projects.md"
+}
+
 add_tmux_fake() {
   local fb=$1
   cat > "$fb/tmux" <<'SH'
@@ -455,11 +462,12 @@ test_worktree_create_removes_worktree_when_path_missing() {
 test_spawn_preserves_orca_metadata_when_pathless_worktree_cleanup_fails() {
   local proj data state config id out status
   id="orcapathlessz6"
-  proj="$TMP_ROOT/pathless-cleanup-project"
+  proj="$TMP_ROOT/unused-projects/pathless-cleanup-project"
   data="$TMP_ROOT/pathless-cleanup-data"
   state="$TMP_ROOT/pathless-cleanup-state"
   config="$TMP_ROOT/pathless-cleanup-config"
   fm_git_init_commit "$proj"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -490,12 +498,13 @@ test_spawn_preserves_orca_metadata_when_pathless_worktree_cleanup_fails() {
 test_spawn_writes_orca_metadata_and_launches_harness() {
   local proj wt data state config id out log
   id="orcaspawnz1"
-  proj="$TMP_ROOT/spawn-project"
+  proj="$TMP_ROOT/unused-projects/spawn-project"
   wt="$TMP_ROOT/spawn-wt"
   data="$TMP_ROOT/spawn-data"
   state="$TMP_ROOT/spawn-state"
   config="$TMP_ROOT/spawn-config"
   fm_git_worktree "$proj" "$wt" "fm/$id"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -509,7 +518,7 @@ test_spawn_writes_orca_metadata_and_launches_harness() {
     FM_PROJECTS_OVERRIDE="$TMP_ROOT/unused-projects" FM_SPAWN_NO_GUARD=1 \
     "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --backend orca 2>&1 )
   expect_code 0 $? "fm-spawn.sh --backend orca should succeed with fake Orca"$'\n'"$out"
-  assert_contains "$out" "spawned $id harness=claude kind=ship mode=no-mistakes yolo=off window=fm-$id worktree=$wt" \
+  assert_contains "$out" "spawned $id harness=claude kind=ship mode=local-only yolo=off window=fm-$id worktree=$wt" \
     "spawn output missing Orca window/worktree summary"
   assert_grep "backend=orca" "$state/$id.meta" "meta missing backend=orca"
   assert_grep "window=fm-$id" "$state/$id.meta" "meta missing stable Orca window alias"
@@ -556,11 +565,12 @@ test_spawn_refuses_orca_secondmate_before_home_mutation() {
 test_spawn_refuses_orca_when_runtime_not_ready() {
   local proj data state config id out status
   id="orcaruntimez6"
-  proj="$TMP_ROOT/runtime-down-project"
+  proj="$TMP_ROOT/unused-projects/runtime-down-project"
   data="$TMP_ROOT/runtime-down-data"
   state="$TMP_ROOT/runtime-down-state"
   config="$TMP_ROOT/runtime-down-config"
   fm_git_init_commit "$proj"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -585,11 +595,12 @@ test_spawn_refuses_orca_when_runtime_not_ready() {
 test_spawn_refuses_orca_nonisolated_worktree() {
   local proj data state config id out status
   id="orcabadwtz4"
-  proj="$TMP_ROOT/bad-spawn-project"
+  proj="$TMP_ROOT/unused-projects/bad-spawn-project"
   data="$TMP_ROOT/bad-spawn-data"
   state="$TMP_ROOT/bad-spawn-state"
   config="$TMP_ROOT/bad-spawn-config"
   fm_git_init_commit "$proj"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -618,12 +629,13 @@ test_spawn_refuses_orca_nonisolated_worktree() {
 test_spawn_removes_orca_worktree_when_terminal_create_fails() {
   local proj wt data state config id out status
   id="orcatermfailz8"
-  proj="$TMP_ROOT/terminal-fail-project"
+  proj="$TMP_ROOT/unused-projects/terminal-fail-project"
   wt="$TMP_ROOT/terminal-fail-wt"
   data="$TMP_ROOT/terminal-fail-data"
   state="$TMP_ROOT/terminal-fail-state"
   config="$TMP_ROOT/terminal-fail-config"
   fm_git_worktree "$proj" "$wt" "fm/$id"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -651,12 +663,13 @@ test_spawn_removes_orca_worktree_when_terminal_create_fails() {
 test_spawn_preserves_orca_metadata_when_abort_cleanup_fails() {
   local proj wt data state config id out status
   id="orcacleanupleakz0"
-  proj="$TMP_ROOT/cleanup-fail-project"
+  proj="$TMP_ROOT/unused-projects/cleanup-fail-project"
   wt="$TMP_ROOT/cleanup-fail-wt"
   data="$TMP_ROOT/cleanup-fail-data"
   state="$TMP_ROOT/cleanup-fail-state"
   config="$TMP_ROOT/cleanup-fail-config"
   fm_git_worktree "$proj" "$wt" "fm/$id"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   touch "$state/.last-watcher-beat"
@@ -685,12 +698,13 @@ test_spawn_preserves_orca_metadata_when_abort_cleanup_fails() {
 test_spawn_releases_orca_resources_when_metadata_write_fails() {
   local proj wt data state config id out status
   id="orcametafailz9"
-  proj="$TMP_ROOT/meta-fail-project"
+  proj="$TMP_ROOT/unused-projects/meta-fail-project"
   wt="$TMP_ROOT/meta-fail-wt"
   data="$TMP_ROOT/meta-fail-data"
   state="$TMP_ROOT/meta-fail-state"
   config="$TMP_ROOT/meta-fail-config"
   fm_git_worktree "$proj" "$wt" "fm/$id"
+  register_local_spawn_project "$data" "$proj"
   mkdir -p "$data/$id" "$state/$id.meta" "$config"
   printf 'brief\n' > "$data/$id/brief.md"
   orca_case meta-fail

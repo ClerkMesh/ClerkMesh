@@ -188,8 +188,9 @@ run_spawn() {
 test_spawn_isolation_abort() {
   local home proj fakebin out status
   home="$TMP_ROOT/spawn-home"
-  mkdir -p "$home/data"
-  proj=$(make_repo "$TMP_ROOT/spawn-proj")
+  mkdir -p "$home/data" "$home/projects"
+  proj=$(make_repo "$home/projects/spawn-proj")
+  printf '%s\n' '- spawn-proj [local-only] - tangle guard fixture (added 2026-07-24)' > "$home/data/projects.md"
   fakebin=$(make_spawn_fakebin "$TMP_ROOT/spawn-fake")
   # A genuine isolated linked worktree of the project, detached on the default.
   git -C "$proj" worktree add -q --detach "$TMP_ROOT/spawn-wt" >/dev/null 2>&1
@@ -268,8 +269,9 @@ run_spawn_record() {
 test_spawn_tmux_window_construction() {
   local home proj fakebin rec wt out status
   home="$TMP_ROOT/spawn-rec-home"
-  mkdir -p "$home/data"
-  proj=$(make_repo "$TMP_ROOT/spawn-rec-proj")
+  mkdir -p "$home/data" "$home/projects"
+  proj=$(make_repo "$home/projects/spawn-rec-proj")
+  printf '%s\n' '- spawn-rec-proj [local-only] - tmux construction fixture (added 2026-07-24)' > "$home/data/projects.md"
   fakebin=$(make_spawn_record_fakebin "$TMP_ROOT/spawn-rec-fake")
   rec="$TMP_ROOT/spawn-rec.log"
   : > "$rec"

@@ -660,12 +660,13 @@ test_spawn_fallback_chain_and_crew_scout_unaffected() {
   # config/secondmate-harness's tokens at all.
   id="crew-unaffected-z1"
   home="$w/home"
-  proj="$w/crew-project"
+  proj="$home/projects/crew-project"
   wt="$w/crew-wt"
   fakebin=$(make_launch_capturing_tmux "$w/tmux-crew")
   fm_git_worktree "$proj" "$wt" "wt-crew"
   mkdir -p "$home/data/$id" "$home/projects" "$home/state"
   printf 'brief\n' > "$home/data/$id/brief.md"
+  printf '%s\n' '- crew-project [local-only] - ordinary crew fixture (added 2026-07-24)' > "$home/data/projects.md"
   : > "$launchlog"
   PATH="$fakebin:$BASE_PATH" TMUX="fake,1,0" CLAUDECODE=1 \
     FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" \
