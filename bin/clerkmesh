@@ -32,28 +32,10 @@ NODE
 }
 
 has_entries() { [ -d "$1" ] && [ -n "$(find "$1" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; }
+path_exists() { [ -e "$1" ] || [ -L "$1" ]; }
 
-init() {
-  verify_provenance
-  marker="$CLERKMESH_DATA/.clerkmesh-version"
-  if [ -e "$marker" ]; then
-    [ "$(cat "$marker")" = "$VERSION" ] || fatal "unsupported ClerkMesh state version"
-  else
-    for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
-      "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
-      has_entries "$path" && fatal "unknown existing ClerkMesh state at $path"
-    done
-  fi
-
-  mkdir -p "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"
-  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"; do
-    [ -w "$path" ] || fatal "directory is not writable: $path"
-  done
-
-  escalation="$CLERKMESH_CLERKS/escalation"
-  if [ ! -d "$escalation/.git" ]; then
-    mkdir -p "$escalation"
-    cat > "$escalation/CLERK.md" <<'EOF'
+emit_escalation_clerk() {
+  cat <<'EOF'
 ---
 name: escalation
 description: >-
@@ -79,6 +61,88 @@ Wait for explicit Captain selection before every execution.
 # Context
 No additional capability material is available.
 EOF
+}
+
+emit_registry() {
+  printf '# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|\n| escalation | %s | active | true |\n' "$CLERKMESH_CLERKS/escalation"
+}
+
+validate_state_directories() {
+  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+    "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
+    if path_exists "$path" && { [ ! -d "$path" ] || [ -L "$path" ]; }; then
+      fatal "nonconforming existing state path (expected a directory): $path"
+    fi
+  done
+}
+
+validate_escalation() {
+  escalation="$CLERKMESH_CLERKS/escalation"
+  [ -d "$escalation" ] && [ ! -L "$escalation" ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ -d "$escalation/.git" ] && [ ! -L "$escalation/.git" ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ -f "$escalation/CLERK.md" ] && [ ! -L "$escalation/CLERK.md" ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  emit_escalation_clerk | cmp -s - "$escalation/CLERK.md" || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+
+  git_top=$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" rev-parse --show-toplevel 2>/dev/null) || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ "$git_top" = "$escalation" ] || fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" symbolic-ref --short HEAD 2>/dev/null)" = main ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" rev-list --count HEAD 2>/dev/null)" = 1 ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" ls-tree -r --name-only HEAD 2>/dev/null)" = CLERK.md ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  expected_blob=$(emit_escalation_clerk | git hash-object --stdin)
+  [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" rev-parse HEAD:CLERK.md 2>/dev/null)" = "$expected_blob" ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+  [ -z "$(GIT_OPTIONAL_LOCKS=0 git -C "$escalation" status --porcelain --untracked-files=all 2>/dev/null)" ] || \
+    fatal "conflicting current-version Escalation Clerk at $escalation"
+}
+
+preflight_init_state() {
+  validate_state_directories
+  marker="$CLERKMESH_DATA/.clerkmesh-version"
+  if ! path_exists "$marker"; then
+    for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+      "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
+      has_entries "$path" && fatal "unknown existing ClerkMesh state at $path"
+    done
+    return 0
+  fi
+
+  [ -f "$marker" ] && [ ! -L "$marker" ] || fatal "nonconforming ClerkMesh state version marker"
+  printf '%s\n' "$VERSION" | cmp -s - "$marker" || fatal "unsupported or malformed ClerkMesh state version"
+
+  registry="$CLERKMESH_DATA/clerks.md"
+  if path_exists "$registry"; then
+    if [ ! -f "$registry" ] || [ -L "$registry" ] || ! emit_registry | cmp -s - "$registry"; then
+      fatal "conflicting current-version Clerk registry at $registry"
+    fi
+  fi
+
+  escalation="$CLERKMESH_CLERKS/escalation"
+  if path_exists "$escalation"; then
+    validate_escalation
+  fi
+}
+
+init() {
+  verify_provenance
+  preflight_init_state
+
+  mkdir -p "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"
+  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"; do
+    [ -w "$path" ] || fatal "directory is not writable: $path"
+  done
+
+  escalation="$CLERKMESH_CLERKS/escalation"
+  if ! path_exists "$escalation"; then
+    mkdir -p "$escalation"
+    emit_escalation_clerk > "$escalation/CLERK.md"
     git -C "$escalation" init -q -b main
     git -C "$escalation" config user.name "ClerkMesh"
     git -C "$escalation" config user.email "clerkmesh@localhost"
@@ -86,10 +150,14 @@ EOF
     git -C "$escalation" commit -q -m "Initialize built-in Escalation Clerk"
   fi
 
-  if [ ! -f "$CLERKMESH_DATA/clerks.md" ]; then
-    printf '# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|\n| escalation | %s | active | true |\n' "$escalation" > "$CLERKMESH_DATA/clerks.md"
+  registry="$CLERKMESH_DATA/clerks.md"
+  if ! path_exists "$registry"; then
+    emit_registry > "$registry"
   fi
-  printf '%s\n' "$VERSION" > "$marker"
+  marker="$CLERKMESH_DATA/.clerkmesh-version"
+  if ! path_exists "$marker"; then
+    printf '%s\n' "$VERSION" > "$marker"
+  fi
   printf 'ClerkMesh initialized at %s\n' "$CLERKMESH_ROOT"
 }
 
