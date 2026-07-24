@@ -6,6 +6,7 @@ import Fastify from "fastify";
 import { buildConversationSessionCatalog } from "./conversation-session-catalog.mjs";
 import { ConversationWriteError } from "./conversation-write-coordinator.mjs";
 import { ConversationLeaseError } from "./conversation-write-lease.mjs";
+import { validateConversationEventSnapshot } from "./conversation-event-schema.mjs";
 
 const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sessions.v1.schema.json", import.meta.url);
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
@@ -14,7 +15,7 @@ const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, now, logger = false }) {
+export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, logger = false }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -46,6 +47,10 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
   if (writeCoordinator !== undefined) {
     if (typeof writeCoordinator?.send !== "function") throw new TypeError("writeCoordinator.send is required");
     if (typeof writeLease?.connect !== "function") throw new TypeError("writeLease.connect is required");
+    if (eventProjection !== undefined &&
+        (typeof eventProjection.snapshot !== "function" || typeof eventProjection.subscribe !== "function")) {
+      throw new TypeError("eventProjection snapshot and subscribe are required");
+    }
 
     app.register(websocket);
     app.register(async function conversationSocket(socketApp) {
@@ -57,6 +62,22 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
         }
         const sendState = (state) => socket.send(JSON.stringify({ type: "lease-state", ...state }));
         sendState(writeLease.connect(clientToken));
+        const diagnostics = new URL(request.url, "http://localhost").searchParams.get("diagnostics") === "true";
+        let cursor = 0;
+        const sendSnapshot = () => {
+          if (socket.readyState !== 1) return;
+          const snapshot = eventProjection.snapshot({ after: cursor, diagnostics });
+          if (!validateConversationEventSnapshot(snapshot)) {
+            socket.close(1011, "event projection unavailable");
+            return;
+          }
+          cursor = snapshot.cursor;
+          socket.send(JSON.stringify({ type: "event-snapshot", snapshot }));
+        };
+        const unsubscribe = eventProjection === undefined ? () => {} : (() => {
+          sendSnapshot();
+          return eventProjection.subscribe(sendSnapshot);
+        })();
         let disconnected = false;
         socket.on("message", (data, isBinary) => {
           if (isBinary) return socket.close(1003, "text messages only");
@@ -74,6 +95,7 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
         socket.on("close", () => {
           if (!disconnected) {
             disconnected = true;
+            unsubscribe();
             writeLease.disconnect(clientToken);
           }
         });

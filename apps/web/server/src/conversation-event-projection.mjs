@@ -13,6 +13,7 @@ export class ConversationEventProjection {
   #cursor = 0;
   #limit;
   #now;
+  #listeners = new Set();
 
   constructor({ limit = 10_000, now = () => new Date() } = {}) {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10_000) {
@@ -30,7 +31,15 @@ export class ConversationEventProjection {
     const event = { sequence: ++this.#cursor, kind, payload: structuredClone(payload) };
     this.#events.push(event);
     if (this.#events.length > this.#limit) this.#events.splice(0, this.#events.length - this.#limit);
-    return structuredClone(event);
+    const result = structuredClone(event);
+    for (const listener of this.#listeners) listener(structuredClone(result));
+    return result;
+  }
+
+  subscribe(listener) {
+    if (typeof listener !== "function") throw new TypeError("listener must be a function");
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
   }
 
   snapshot({ after = 0, diagnostics = false } = {}) {

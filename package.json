@@ -10,7 +10,7 @@
     "test:gate0-primary-launch": "bash tests/gate0-primary-launch.test.sh",
     "cert:gate0-primary-lock": "bash tests/cert/g0-003-real-web-tui.sh",
     "test:gate0-no-forge": "bash tests/gate0-no-forge.test.sh",
-    "test:slice1-schema": "node tests/slice1-conversation-schema.test.mjs && node tests/slice1-session-catalog.test.mjs && node tests/slice1-session-http.test.mjs && node tests/slice1-pi-session-discovery.test.mjs && node tests/slice1-conversation-write.test.mjs && node tests/slice1-conversation-write-http.test.mjs && node tests/slice1-conversation-write-lease.test.mjs && node tests/slice1-conversation-write-ws.test.mjs && node tests/slice1-conversation-event-projection.test.mjs && corepack pnpm --filter @clerkmesh/shared check:generated",
+    "test:slice1-schema": "node tests/slice1-conversation-schema.test.mjs && node tests/slice1-session-catalog.test.mjs && node tests/slice1-session-http.test.mjs && node tests/slice1-pi-session-discovery.test.mjs && node tests/slice1-conversation-write.test.mjs && node tests/slice1-conversation-write-http.test.mjs && node tests/slice1-conversation-write-lease.test.mjs && node tests/slice1-conversation-write-ws.test.mjs && node tests/slice1-conversation-event-projection.test.mjs && node tests/slice1-conversation-event-ws.test.mjs && corepack pnpm --filter @clerkmesh/shared check:generated",
     "test:firstmate": "cd firstmate && bin/fm-test-run.sh --all"
   },
   "devDependencies": {
