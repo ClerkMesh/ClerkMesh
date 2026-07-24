@@ -1,0 +1,9 @@
+/clerks/
+/clerkmesh-data/
+/clerkmesh-state/
+/cache/
+
+# Firstmate is vendored source, but its operational home data is local.
+/firstmate/data/
+/firstmate/state/
+/firstmate/projects/

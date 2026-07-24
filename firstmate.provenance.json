@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/kunchenguid/firstmate.git",
+  "defaultBranch": "main",
+  "sourceCommit": "10ee7797e50c88c9865d8fb382cdfee5c2b8bcd1",
+  "vendoredAt": "2026-07-24T10:25:31Z",
+  "license": "MIT",
+  "licenseFile": "firstmate/LICENSE",
+  "attribution": "Copyright (c) 2026 Kun Chen"
+}
