@@ -4,7 +4,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 
 | Requirement | Status | Automated check | Runtime evidence |
 |---|---|---|---|
-| PLAT-003 | partial | — | `evidence/gate-0/provenance.md` freezes Firstmate; dependency certification remains |
+| PLAT-003 | partial | Pi 0.82.0 passes Firstmate's real tmux-backed Calm E2Es and complete baseline | `evidence/gate-0/provenance.md` freezes Firstmate; Node, pnpm, Git, Herdr, and Treehouse certification remains |
 | BASE-001 | complete | `tests/gate0-layout.test.sh` asks pnpm to discover the plain workspace package set | `evidence/gate-0/workspace.md` |
 | BASE-002 | partial | `tests/gate0-layout.test.sh` verifies every required source boundary | `evidence/gate-0/workspace.md`; schema and launcher functionality within the skeleton remain |
 | BASE-003 | complete | `tests/gate0-layout.test.sh` rejects nested `.git` and `.gitmodules` paths | `evidence/gate-0/provenance.md`, `evidence/gate-0/workspace.md` |
@@ -18,7 +18,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 | G0-001 | partial | `tests/init.test.sh` passes clean init, repeated init, and one unknown-state refusal case | Broader unknown/conflict matrix remains |
 | G0-002 | partial | Nested Git and ignore checks in evidence pass | Full Gate 0 completion awaits root tracking verification after orchestrator commit |
 | G0-003 | partial | `tests/gate0-lock.test.sh` proves a live Pi holder is not overwritten; upstream `fm-session-start.test.sh` proves lock refusal suppresses mutations | `evidence/gate-0/lock-liveness.md`; real Web/TUI Pi competition remains |
-| G0-005 | failed | `corepack pnpm run test:firstmate` executes the complete 96-script upstream suite; focused reruns repair both Secondmate clone-assumption failures, the backend conformance vendoring failure, plus the Orca and Zellij fixture failures, while the last complete run has 7 failures and no failures are waived | `evidence/gate-0/firstmate-baseline.md`, `evidence/gate-0/vendored-test-fixtures.md`, `evidence/gate-0/backend-test-fixture.md`, `evidence/gate-0/orca-test-fixture.md`, `evidence/gate-0/zellij-test-fixture.md`, `evidence/gate-0/artifacts/firstmate-baseline.json` |
+| G0-005 | complete | `corepack pnpm run test:firstmate` passes all 96 upstream scripts with 0 failures and 15 declared gate skips; no failure was waived | `evidence/gate-0/firstmate-baseline.md`, focused fixture evidence, and the historical diagnostic artifact at `evidence/gate-0/artifacts/firstmate-baseline.json` |
 
 ## Stage status
 
