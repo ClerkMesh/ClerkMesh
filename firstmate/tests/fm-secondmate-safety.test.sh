@@ -11,6 +11,11 @@ set -u
 . "$(dirname "${BASH_SOURCE[0]}")/secondmate-helpers.sh"
 
 TMP_ROOT=$(fm_test_tmproot fm-secondmate-safety)
+# Secondmate homes clone Firstmate. In ClerkMesh, Firstmate is directly tracked
+# rather than a nested repository, so run clone-oriented tests from a disposable
+# standalone materialization of the exact vendored tree.
+fm_git_clone_root "$TMP_ROOT/firstmate-source"
+ROOT="$TMP_ROOT/firstmate-source"
 export FM_BACKEND=tmux
 
 file_mode() {
@@ -181,7 +186,7 @@ test_home_seed_uses_treehouse_acquired_home() {
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/dash-alpha.git"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
-  git clone --quiet "$ROOT" "$acquired"
+  fm_git_clone_root "$acquired"
   fakebin=$(make_fake_tmux "$TMP_ROOT/dash-fake")
   log="$TMP_ROOT/dash-fake/tmux.log"
   lease="$TMP_ROOT/dash-fake/lease"
@@ -212,7 +217,7 @@ test_home_seed_returns_treehouse_acquired_home_on_assignment_failure() {
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/dash-fail-alpha.git"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
-  git clone --quiet "$ROOT" "$acquired"
+  fm_git_clone_root "$acquired"
   acquired_abs=$(cd "$acquired" && pwd -P)
   printf 'other\n' > "$acquired/.fm-secondmate-home"
   fakebin=$(make_fake_tmux "$TMP_ROOT/dash-fail-fake")
@@ -241,7 +246,7 @@ test_home_seed_warns_when_acquired_home_return_fails() {
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/dash-return-fail-alpha.git"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
-  git clone --quiet "$ROOT" "$acquired"
+  fm_git_clone_root "$acquired"
   acquired_abs=$(cd "$acquired" && pwd -P)
   printf 'other\n' > "$acquired/.fm-secondmate-home"
   fakebin=$(make_fake_tmux "$TMP_ROOT/dash-return-fail-fake")
@@ -734,7 +739,7 @@ test_home_seed_refuses_active_home_and_root() {
   root_descendant="$root_clone/tmp/design-home"
   root_ancestor="$TMP_ROOT/active-seed-root-ancestor"
   root_inside="$root_ancestor/nested-root"
-  git clone --quiet "$ROOT" "$active_ancestor"
+  fm_git_clone_root "$active_ancestor"
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/active-alpha.git"
@@ -767,7 +772,7 @@ test_home_seed_refuses_active_home_and_root() {
   grep -F 'secondmate home cannot be the firstmate repo' "$err" >/dev/null \
     || fail "seed did not explain FM_ROOT rejection"
 
-  git clone --quiet "$ROOT" "$root_clone"
+  fm_git_clone_root "$root_clone"
   if FM_HOME="$home" FM_ROOT_OVERRIDE="$root_clone" "$ROOT/bin/fm-home-seed.sh" design "$root_descendant" alpha >/dev/null 2>"$err"; then
     fail "seed allowed secondmate home inside FM_ROOT"
   fi
@@ -775,8 +780,8 @@ test_home_seed_refuses_active_home_and_root() {
     || fail "seed did not explain FM_ROOT descendant rejection"
   [ ! -e "$root_clone/tmp" ] || fail "seed created a directory inside FM_ROOT before descendant rejection"
 
-  git clone --quiet "$ROOT" "$root_ancestor"
-  git clone --quiet "$ROOT" "$root_inside"
+  fm_git_clone_root "$root_ancestor"
+  fm_git_clone_root "$root_inside"
   if FM_HOME="$home" FM_ROOT_OVERRIDE="$root_inside" "$ROOT/bin/fm-home-seed.sh" design "$root_ancestor" alpha >/dev/null 2>"$err"; then
     fail "seed allowed secondmate home to contain FM_ROOT"
   fi
@@ -794,7 +799,7 @@ test_home_seed_refuses_home_marked_for_another_id() {
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/marked-alpha.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   printf 'other\n' > "$subhome/.fm-secondmate-home"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
   scaffold_secondmate_charter "$home" design 'design domain' alpha || fail "charter scaffold failed for marked-home seed test"
@@ -815,7 +820,7 @@ test_home_seed_refuses_home_registered_to_another_id() {
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/registered-alpha.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   subhome_abs=$(cd "$subhome" && pwd -P)
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
   printf '%s\n' '- other - other domain (home: '"$subhome_abs"'; scope: other domain; projects: beta; added 2026-06-22)' > "$home/data/secondmates.md"
@@ -872,8 +877,8 @@ test_home_seed_refuses_home_overlapping_registered_home() {
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/overlap-alpha.git"
-  git clone --quiet "$ROOT" "$registered_parent"
-  git clone --quiet "$ROOT" "$registered_child"
+  fm_git_clone_root "$registered_parent"
+  fm_git_clone_root "$registered_child"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
   cat > "$home/data/secondmates.md" <<EOF
 - parent - parent domain (home: $registered_parent; scope: parent domain; projects: beta; added 2026-06-22)
@@ -921,7 +926,7 @@ test_home_seed_refuses_existing_remote_backed_project_with_wrong_origin() {
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/wrong-alpha.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   subhome_abs=$(cd "$subhome" && pwd -P)
   mkdir -p "$subhome/projects"
   git clone --quiet "$home/projects/alpha" "$subhome/projects/alpha"
@@ -973,7 +978,7 @@ test_home_seed_skips_initialized_existing_no_mistakes_projects() {
   fm_git_init_commit "$home/projects/beta"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/existing-alpha.git"
   fm_git_add_origin "$home/projects/beta" "$TMP_ROOT/remotes/existing-beta.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   mkdir -p "$subhome/projects"
   origin=$(git -C "$home/projects/alpha" remote get-url origin)
   git clone --quiet "$origin" "$subhome/projects/alpha"
@@ -1006,7 +1011,7 @@ test_home_seed_refuses_uninitialized_existing_no_mistakes_project() {
   mkdir -p "$home/projects" "$home/data" "$home/state"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/uninitialized-alpha.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   mkdir -p "$subhome/projects"
   origin=$(git -C "$home/projects/alpha" remote get-url origin)
   git clone --quiet "$origin" "$subhome/projects/alpha"
@@ -1035,7 +1040,7 @@ test_home_seed_refuses_project_destinations_outside_subhome() {
   mkdir -p "$home/projects" "$home/data" "$home/state" "$sink"
   fm_git_init_commit "$home/projects/alpha"
   fm_git_add_origin "$home/projects/alpha" "$TMP_ROOT/remotes/symlink-alpha.git"
-  git clone --quiet "$ROOT" "$subhome"
+  fm_git_clone_root "$subhome"
   rm -rf "$subhome/projects"
   ln -s "$sink" "$subhome/projects"
   printf '%s\n' '- alpha [direct-PR] - alpha project (added 2026-06-22)' > "$home/data/projects.md"
@@ -1065,7 +1070,7 @@ test_home_seed_refuses_operational_dirs_outside_subhome() {
     subhome="$TMP_ROOT/symlink-opdir-subhome-$opdir"
     sink="$home/data/symlink-opdir-$opdir"
     rm -rf "$subhome" "$sink"
-    git clone --quiet "$ROOT" "$subhome"
+    fm_git_clone_root "$subhome"
     mkdir -p "$sink"
     rm -rf "${subhome:?}/${opdir:?}"
     ln -s "$sink" "$subhome/$opdir"
@@ -1093,7 +1098,7 @@ test_home_seed_refuses_symlinked_leaf_files() {
     subhome="$TMP_ROOT/symlink-leaf-subhome-${leaf//\//-}"
     sink="$home/data/symlink-leaf-${leaf//\//-}"
     rm -rf "$subhome" "$sink"
-    git clone --quiet "$ROOT" "$subhome"
+    fm_git_clone_root "$subhome"
     mkdir -p "$(dirname "$subhome/$leaf")" "$(dirname "$sink")"
     expected=outside
     if [ "$leaf" = ".fm-secondmate-home" ]; then

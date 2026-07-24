@@ -100,6 +100,20 @@ SH
   done
 }
 
+# Materialize the directly tracked vendored tree as an independent Git fixture.
+# BASE-003 deliberately means $ROOT itself has no .git directory and cannot be
+# cloned; tests that need a disposable Firstmate repository must not accidentally
+# clone the enclosing product repository instead.
+fm_git_clone_root() { # <destination>
+  local destination=$1
+  mkdir -p "$destination"
+  cp -R "$ROOT/." "$destination/"
+  git -C "$destination" init -q
+  git -C "$destination" add -A
+  git -C "$destination" -c user.name=fmtest -c user.email=fmtest@example.invalid \
+    commit -qm "Firstmate fixture"
+}
+
 # --- deterministic git identity and fixtures --------------------------------
 
 # fm_git_identity [name] [email]: export a fixed author/committer identity so

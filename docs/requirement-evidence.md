@@ -18,7 +18,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 | G0-001 | partial | `tests/init.test.sh` passes clean init, repeated init, and one unknown-state refusal case | Broader unknown/conflict matrix remains |
 | G0-002 | partial | Nested Git and ignore checks in evidence pass | Full Gate 0 completion awaits root tracking verification after orchestrator commit |
 | G0-003 | partial | `tests/gate0-lock.test.sh` proves a live Pi holder is not overwritten; upstream `fm-session-start.test.sh` proves lock refusal suppresses mutations | `evidence/gate-0/lock-liveness.md`; real Web/TUI Pi competition remains |
-| G0-005 | failed | `corepack pnpm run test:firstmate` executes the complete 96-script upstream suite; recorded run has 7 failures and no failures are waived | `evidence/gate-0/firstmate-baseline.md`, `evidence/gate-0/artifacts/firstmate-baseline.json` |
+| G0-005 | failed | `corepack pnpm run test:firstmate` executes the complete 96-script upstream suite; focused reruns repair both Secondmate clone-assumption failures, while the last complete run has 7 failures and no failures are waived | `evidence/gate-0/firstmate-baseline.md`, `evidence/gate-0/vendored-test-fixtures.md`, `evidence/gate-0/artifacts/firstmate-baseline.json` |
 
 ## Stage status
 

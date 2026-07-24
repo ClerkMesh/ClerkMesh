@@ -28,6 +28,10 @@ set -u
 . "$(dirname "${BASH_SOURCE[0]}")/secondmate-helpers.sh"
 
 TMP_ROOT=$(fm_test_tmproot fm-secondmate-lifecycle)
+# Exercise clone-based Secondmate lifecycle from a standalone fixture because
+# ClerkMesh directly tracks the vendored Firstmate tree (BASE-003).
+fm_git_clone_root "$TMP_ROOT/firstmate-source"
+ROOT="$TMP_ROOT/firstmate-source"
 export FM_BACKEND=tmux
 
 HOME_DIR="$TMP_ROOT/main home"
