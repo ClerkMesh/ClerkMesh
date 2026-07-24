@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ClerkMesh launcher. Usage: clerkmesh init
+# ClerkMesh launcher. Usage: clerkmesh init | primary --tui | web --gate0-cert
 set -eu
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
@@ -134,8 +134,10 @@ init() {
   verify_provenance
   preflight_init_state
 
-  mkdir -p "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"
-  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE"; do
+  mkdir -p "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+    "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"
+  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+    "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
     [ -w "$path" ] || fatal "directory is not writable: $path"
   done
 
@@ -161,7 +163,28 @@ init() {
   printf 'ClerkMesh initialized at %s\n' "$CLERKMESH_ROOT"
 }
 
+launch_primary_tui() {
+  command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
+  exec node "$CLERKMESH_ROOT/packages/shared/src/primary-launch.mjs" tui
+}
+
+launch_gate0_web() {
+  command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
+  exec node "$CLERKMESH_ROOT/apps/web/server/gate0-cert-server.mjs"
+}
+
 case "${1:-}" in
-  init) [ "$#" -eq 1 ] || fatal "usage: clerkmesh init"; init ;;
-  *) fatal "usage: clerkmesh init" ;;
+  init)
+    [ "$#" -eq 1 ] || fatal "usage: clerkmesh init"
+    init
+    ;;
+  primary)
+    [ "$#" -eq 2 ] && [ "${2:-}" = --tui ] || fatal "usage: clerkmesh primary --tui"
+    launch_primary_tui
+    ;;
+  web)
+    [ "$#" -eq 2 ] && [ "${2:-}" = --gate0-cert ] || fatal "usage: clerkmesh web --gate0-cert"
+    launch_gate0_web
+    ;;
+  *) fatal "usage: clerkmesh init | primary --tui | web --gate0-cert" ;;
 esac

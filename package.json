@@ -7,6 +7,8 @@
     "test:gate0-layout": "bash tests/gate0-layout.test.sh",
     "test:gate0-tracking": "bash tests/gate0-tracking.test.sh",
     "test:gate0-lock": "bash tests/gate0-lock.test.sh",
+    "test:gate0-primary-launch": "bash tests/gate0-primary-launch.test.sh",
+    "cert:gate0-primary-lock": "bash tests/cert/g0-003-real-web-tui.sh",
     "test:gate0-no-forge": "bash tests/gate0-no-forge.test.sh",
     "test:firstmate": "cd firstmate && bin/fm-test-run.sh --all"
   }
