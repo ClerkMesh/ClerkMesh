@@ -46,12 +46,21 @@ kill_tree() {
   kill -TERM "$parent" 2>/dev/null || true
 }
 
+remove_tmux_socket() {
+  local socket_name=${1:-}
+  [ -n "$socket_name" ] || return 0
+  rm -f "/tmp/tmux-$(id -u)/$socket_name"
+}
+
 cleanup_case() {
   if [ -n "$WEB_PID" ] && pid_alive "$WEB_PID"; then
     kill -TERM "$WEB_PID" 2>/dev/null || true
     wait "$WEB_PID" 2>/dev/null || true
   fi
-  if [ -n "$SOCKET" ]; then "$TMUX" -L "$SOCKET" kill-server 2>/dev/null || true; fi
+  if [ -n "$SOCKET" ]; then
+    "$TMUX" -L "$SOCKET" kill-server 2>/dev/null || true
+    remove_tmux_socket "$SOCKET"
+  fi
   if [ -n "$TUI_OWNER_PID" ] && pid_alive "$TUI_OWNER_PID"; then kill_tree "$TUI_OWNER_PID"; fi
   if [ -n "$WEB_PID" ] && pid_alive "$WEB_PID"; then kill_tree "$WEB_PID"; fi
   WEB_PID=''
@@ -222,10 +231,12 @@ manifest() {
 }
 
 stop_tui() {
-  local pid=$TUI_PI_PID
+  local pid=$TUI_PI_PID socket_name=$SOCKET
   tui_send /quit
   wait_pid_dead "$pid" || fail "$CASE_LABEL TUI Pi $pid survived /quit"
-  "$TMUX" -L "$SOCKET" kill-server 2>/dev/null || true
+  "$TMUX" -L "$socket_name" kill-server 2>/dev/null || true
+  remove_tmux_socket "$socket_name"
+  [ ! -e "/tmp/tmux-$(id -u)/$socket_name" ] || fail "$CASE_LABEL private tmux socket survived shutdown"
   wait_pid_dead "$TUI_OWNER_PID" || fail "$CASE_LABEL TUI owner $TUI_OWNER_PID survived private tmux shutdown"
   TUI_PI_PID=''
   TUI_OWNER_PID=''
