@@ -190,6 +190,8 @@ run_tui_session_start() {
     tui_capture >&2
     fail "$CASE_LABEL TUI session-start did not complete"
   }
+  "$TMUX" -L "$SOCKET" send-keys -t "$TUI_SESSION" C-o
+  sleep 0.2
 }
 
 wait_for_lock() {
