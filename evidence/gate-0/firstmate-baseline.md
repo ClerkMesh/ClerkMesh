@@ -19,15 +19,15 @@ bin/fm-test-run.sh --all --json ../evidence/gate-0/artifacts/firstmate-baseline.
 
 ## Passing baseline
 
-The complete baseline rerun on 2026-07-24 executed all 96 upstream behavior scripts in 1,431,611 ms and exited successfully:
+The complete current-root baseline rerun on 2026-07-24, after integrating the Gate 0 project-preflight fixture repairs, executed all 96 upstream behavior scripts in 1,383,051 ms and exited successfully:
 
 ```text
-FM_TEST_SUMMARY total=96 failed=0 skipped_gate=15 duration_ms=1431611
+FM_TEST_SUMMARY total=96 failed=0 skipped_gate=15 duration_ms=1383051
 ```
 
-The 15 skips were the suite's declared environment/opt-in gates; no failing script was converted to a skip. The run used Pi 0.82.0, which passed the real tmux-backed operational-follow-up, hidden-block geometry, and interactive Calm E2Es.
+The 15 skips were the suite's declared environment/opt-in gates; no failing script was converted to a skip. The historical machine-readable artifact was not overwritten because this rerun did not use `--json`.
 
-The final two repairs were:
+The current-root repair registered real committed local-only Git Projects for five legacy spawn fixtures so they reach their intended test seams without weakening the mandatory fail-closed project preflight. Earlier baseline repairs also ensured that:
 
 - Pi and OpenCode watcher arms no longer start through a user login shell, preventing slow host profile initialization from consuming the bounded successor-readiness window.
 - Calm's Pi 0.82.0 interactive test waits for both hidden-row removal and retained-conversation redraw, rather than accepting Pi's transient cleared frame as the final presentation.
