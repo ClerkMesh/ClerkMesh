@@ -17,6 +17,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 | INIT-005 | partial | `tests/init.test.sh` proves unmarked non-empty state is refused before product writes | Conflict cases and current-version repair coverage remain |
 | G0-001 | partial | `tests/init.test.sh` passes clean init, repeated init, and one unknown-state refusal case | Broader unknown/conflict matrix remains |
 | G0-002 | partial | Nested Git and ignore checks in evidence pass | Full Gate 0 completion awaits root tracking verification after orchestrator commit |
+| G0-003 | partial | `tests/gate0-lock.test.sh` proves a live Pi holder is not overwritten; upstream `fm-session-start.test.sh` proves lock refusal suppresses mutations | `evidence/gate-0/lock-liveness.md`; real Web/TUI Pi competition remains |
 
 ## Stage status
 

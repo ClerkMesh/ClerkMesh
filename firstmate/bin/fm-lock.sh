@@ -36,10 +36,22 @@ harness_pid() {
 }
 
 holder_alive() {  # true if $1 is a live process that looks like a harness
-  local pid=$1 comm
+  local pid=$1 comm base args
   kill -0 "$pid" 2>/dev/null || return 1
   comm=$(ps -o comm= -p "$pid" 2>/dev/null) || return 1
-  printf '%s' "$(basename "$comm") $(ps -o args= -p "$pid" 2>/dev/null)" | grep -qE "$HARNESS_RE"
+  base=$(basename "$comm")
+  # Pi must be matched against the executable name by itself. Combining it
+  # with argv makes the anchored ^pi$ alternative impossible to satisfy and
+  # can incorrectly classify a live Pi holder as stale.
+  [ "$base" = pi ] && return 0
+  printf '%s' "$base" | grep -qE 'claude|codex|opencode|grok' && return 0
+  case "$comm" in
+    *node*|*python*)
+      args=$(ps -o args= -p "$pid" 2>/dev/null) || return 1
+      printf '%s' "$args" | grep -qE "$HARNESS_RE"
+      ;;
+    *) return 1 ;;
+  esac
 }
 
 if [ "${1:-}" = "status" ]; then
