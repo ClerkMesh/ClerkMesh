@@ -10,6 +10,30 @@ import { validateConversationEventSnapshot } from "./conversation-event-schema.m
 
 const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sessions.v1.schema.json", import.meta.url);
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+function isLoopbackAuthority(value, scheme = "http:") {
+  if (typeof value !== "string" || value.length === 0) return false;
+  try {
+    const url = new URL(`${scheme}//${value}`);
+    return LOOPBACK_HOSTNAMES.has(url.hostname) && url.username === "" && url.password === "";
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedOrigin(value) {
+  if (value === undefined) return true;
+  if (typeof value !== "string" || value === "null") return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === "http:" || url.protocol === "https:") &&
+      LOOPBACK_HOSTNAMES.has(url.hostname) && url.username === "" && url.password === "" &&
+      url.pathname === "/" && url.search === "" && url.hash === "";
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
@@ -25,6 +49,18 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
   addFormats(ajv);
   const validateCatalog = ajv.compile(catalogSchema);
   const app = Fastify({ logger, ajv: { customOptions: { removeAdditional: false } } });
+
+  // ClerkMesh V1 is a loopback product, not a LAN service. Reject DNS rebinding
+  // and cross-origin browser requests before any query or mutation handler runs.
+  app.addHook("onRequest", (request, reply, done) => {
+    const forwardedHost = request.headers["x-forwarded-host"];
+    const host = request.headers.host;
+    if (forwardedHost !== undefined || !isLoopbackAuthority(host) || !isAllowedOrigin(request.headers.origin)) {
+      reply.code(403).send({ error: "Request origin is not allowed." });
+      return;
+    }
+    done();
+  });
 
   app.get("/api/conversations/sessions", async (_request, reply) => {
     try {
