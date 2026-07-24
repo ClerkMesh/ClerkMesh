@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/conversation-sessions.v1.schema.json",
+  "title": "ClerkMesh conversation session catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "sessions", "errors"],
+  "properties": {
+    "schema": { "const": "clerkmesh.conversation-sessions.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "createdAt", "modifiedAt", "messageCount"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": ["string", "null"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "modifiedAt": { "type": "string", "format": "date-time" },
+          "messageCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

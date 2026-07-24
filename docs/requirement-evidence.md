@@ -26,13 +26,16 @@ A requirement is marked complete only when the linked commands and artifacts are
 | PROC-001 | partial | The Gate-0 Web certification server is one foreground process and has no daemon/restart behavior | `evidence/gate-0/lock-liveness.md`; the Slice 1 product server remains |
 | PROC-002 | partial | Real certification proves each Web process terminates only its owned Pi child | Worker/Learning lifecycle coverage remains later-slice work |
 | PROC-003 | partial | Fast contract and real certification prove Web/TUI use one canonical home and the same explicit Firstmate extensions | The eventual ClerkMesh Primary Extension remains Slice 1/2 work |
+| CONV-001 | partial | `test:slice1-schema` freezes the opaque, path-free session catalog boundary; `docs/slice-1-requirement-matrix.md` records cwd filtering and zero-model-call cases | Session discovery/filter implementation and real zero-token evidence remain |
 | CONV-002 | not started | Gate-0 uses only a fixed RPC bash operation and makes no model call | First-message lazy startup is explicitly deferred to Slice 1 |
 | CONV-003 | partial | The fixed Web seam is single-start and never auto-restarts Pi | Product session-selection/offline behavior remains Slice 1 |
 | CONV-011 | partial | Real competition proves the Web seam leaves lock authority to Firstmate and the loser reports read-only | Full Conversation Bridge remains Slice 1 |
+| READ-003 | partial | `packages/shared/schemas/conversation-sessions.v1.schema.json` and its reproducibly generated TS type freeze the first Web boundary model | Ajv runtime validation and all remaining v1 projections remain |
 | CERT-001 | complete | Opt-in real runner uses Pi 0.82.0, real tmux/TUI, and real Pi RPC through the ClerkMesh Web process path | `evidence/gate-0/artifacts/g0-003-real-web-tui.txt` |
 
 ## Stage status
 
 - Gate 0: **complete**
-- Slice 1–5: **not started**
+- Slice 1: **in progress** (session catalog interface frozen; no exit condition complete)
+- Slice 2–5: **not started**
 - Release Gate: **not started**
