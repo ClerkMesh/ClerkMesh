@@ -19,10 +19,13 @@ FIXTURE="$TMP/product"
 FAKEBIN="$TMP/fakebin"
 CAPTURE="$TMP/capture"
 mkdir -p "$FIXTURE/bin" "$FIXTURE/firstmate/.pi/extensions" \
-  "$FIXTURE/apps/web/server" "$FIXTURE/packages/shared/src" "$FAKEBIN" "$CAPTURE"
+  "$FIXTURE/apps/web/server" "$FIXTURE/packages/shared/src" \
+  "$FIXTURE/packages/pi-primary-extension" "$FAKEBIN" "$CAPTURE"
 cp "$ROOT/bin/clerkmesh" "$FIXTURE/bin/clerkmesh"
 cp "$ROOT/apps/web/server/gate0-cert-server.mjs" "$FIXTURE/apps/web/server/gate0-cert-server.mjs"
 cp "$ROOT/packages/shared/src/primary-launch.mjs" "$FIXTURE/packages/shared/src/primary-launch.mjs"
+cp "$ROOT/packages/pi-primary-extension/index.ts" "$FIXTURE/packages/pi-primary-extension/index.ts"
+cp "$ROOT/packages/pi-primary-extension/CLERK.md" "$FIXTURE/packages/pi-primary-extension/CLERK.md"
 cp "$ROOT/firstmate.provenance.json" "$FIXTURE/firstmate.provenance.json"
 cp "$ROOT/firstmate/LICENSE" "$FIXTURE/firstmate/LICENSE"
 : > "$FIXTURE/firstmate/.pi/extensions/fm-primary-turnend-guard.ts"
@@ -122,6 +125,7 @@ wait "$web_pid"
 web_pid=
 
 expected_home=$(cd "$FIXTURE/firstmate" && pwd -P)
+expected_primary_extension=$(cd "$FIXTURE/packages/pi-primary-extension" && pwd -P)/index.ts
 for mode in tui rpc; do
   launch="$CAPTURE/$mode.launch"
   grep -Fxq "cwd=$expected_home" "$launch" || fail "$mode Pi cwd was not canonical"
@@ -129,6 +133,7 @@ for mode in tui rpc; do
   grep -Fxq "env:FM_ROOT_OVERRIDE=$expected_home" "$launch" || fail "$mode FM_ROOT_OVERRIDE was not canonical"
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-turnend-guard.ts" "$launch" || fail "$mode omitted the turn-end extension"
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-pi-watch.ts" "$launch" || fail "$mode omitted the watcher extension"
+  grep -Fxq "arg:$expected_primary_extension" "$launch" || fail "$mode omitted the ClerkMesh Primary extension"
 done
 
 # RPC contributes only its transport selector; every common argv/env/cwd byte must match.

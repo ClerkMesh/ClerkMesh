@@ -11,6 +11,7 @@ export const firstmateHome = realpathSync(resolve(clerkmeshRoot, "firstmate"));
 const extensionPaths = Object.freeze([
   realpathSync(resolve(firstmateHome, ".pi/extensions/fm-primary-turnend-guard.ts")),
   realpathSync(resolve(firstmateHome, ".pi/extensions/fm-primary-pi-watch.ts")),
+  realpathSync(resolve(clerkmeshRoot, "packages/pi-primary-extension/index.ts")),
 ]);
 
 const canonicalEnvironment = Object.freeze({
@@ -72,8 +73,7 @@ export function buildPrimaryLaunch(mode) {
   assertInitialized();
   const commonArgv = [
     "--no-extensions",
-    "-e", extensionPaths[0],
-    "-e", extensionPaths[1],
+    ...extensionPaths.flatMap((path) => ["-e", path]),
   ];
   if (process.env.CLERKMESH_GATE0_CERT === "1") {
     commonArgv.push(
