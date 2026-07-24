@@ -2,8 +2,16 @@
   "repository": "https://github.com/kunchenguid/firstmate.git",
   "defaultBranch": "main",
   "sourceCommit": "10ee7797e50c88c9865d8fb382cdfee5c2b8bcd1",
+  "sourceTree": "591bac72c331d9b7677dd141b9b02aae1ab5e3b0",
   "vendoredAt": "2026-07-24T10:25:31Z",
+  "vendoredPath": "firstmate",
+  "vendoring": {
+    "method": "copy",
+    "excluded": [".git"],
+    "clerkMeshImportCommit": "e1c23b112f6dd0253c8a16978d8f5aecba4a8840"
+  },
   "license": "MIT",
   "licenseFile": "firstmate/LICENSE",
+  "licenseSha256": "945016bd37e1ba7211622ef60ee1d23ab727896ba7710edd21e8fbe983863969",
   "attribution": "Copyright (c) 2026 Kun Chen"
 }

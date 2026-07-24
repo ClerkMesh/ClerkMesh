@@ -9,6 +9,7 @@ Reproduce from the clean repository root:
 ```sh
 corepack pnpm --version
 corepack pnpm test:gate0-layout
+corepack pnpm test:gate0-tracking
 ```
 
 Expected result:
@@ -16,6 +17,7 @@ Expected result:
 ```text
 11.17.0
 ok - Gate 0 pnpm workspace layout is complete and discoverable
+ok - G0-002 root tracking, provenance, and runtime exclusion are reproducible
 ```
 
-The test asks pnpm itself to enumerate every declared package and rejects nested Git metadata in `firstmate/`.
+The layout test asks pnpm itself to enumerate every declared package and rejects nested Git metadata in `firstmate/`. The tracking test additionally verifies that `firstmate/` is an ordinary root-Git tree rather than a gitlink/subtree mechanism and that all non-operational checked-out files are tracked.
