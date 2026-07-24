@@ -1,8 +1,8 @@
 # Slice 1 requirement-to-test matrix
 
-Status: interface freeze started; Slice 1 is incomplete.
+Status: interface frozen and server-side catalog projection implemented; Slice 1 is incomplete.
 
-The first bounded work package freezes only the zero-token session catalog crossing the Web boundary. Session identifiers are opaque: canonical session paths remain server-side, preventing the browser from supplying filesystem paths. Runtime Ajv validation will be added with the server endpoint.
+The first bounded work packages freeze and build the zero-token session catalog crossing the Web boundary. Session identifiers are opaque: canonical session paths remain in a server-only lookup, preventing the browser from supplying filesystem paths. Discovery canonicalizes cwd (including symlink aliases), omits foreign or invalid sessions, rejects ambiguous duplicate IDs, and has no dependency on the Primary launch owner. Runtime Ajv validation will be added with the HTTP endpoint.
 
 ## Dependencies
 
@@ -15,7 +15,7 @@ The first bounded work package freezes only the zero-token session catalog cross
 
 | Exit | Requirements | Planned automated proof | Required real proof |
 |---|---|---|---|
-| S1-001 | CONV-001, CONV-002 | catalog schema/type freshness; session fixture cwd/symlink filtering; zero spawn/model-call assertions | browse real Pi histories while provider-call tripwire remains untouched |
+| S1-001 | CONV-001, CONV-002 | `test:slice1-schema` covers catalog schema/type freshness, cwd/symlink filtering, opaque server lookup, malformed/duplicate rejection, and zero launch/model-call assertions | browse real Pi histories while provider-call tripwire remains untouched |
 | S1-002 | CONV-002, CONV-006 | concurrent HTTP sends share one startup promise; `(token, requestId)` replay/conflict cases | one real Pi child and one persisted Captain message |
 | S1-003 | CONV-004, CONV-005, CONV-010, EXEC-001, EXEC-002 | strict JSONL framing; normalized visible/diagnostic reducers; command discovery fail-closed | CERT-002 stream, extension UI, injection, and `agent_settled` |
 | S1-004 | CONV-006–CONV-008 | fake-clock lease/reconnect and two-token HTTP/WS integration cases | loopback browser reconnect scenario |
