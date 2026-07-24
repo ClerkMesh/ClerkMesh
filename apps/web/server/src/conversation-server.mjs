@@ -39,11 +39,14 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, logger = false }) {
+export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
   if (typeof listSessions !== "function") throw new TypeError("listSessions is required");
+  if (!Number.isSafeInteger(heartbeatIntervalMs) || heartbeatIntervalMs < 1) {
+    throw new TypeError("heartbeatIntervalMs must be a positive safe integer");
+  }
 
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   addFormats(ajv);
@@ -98,6 +101,12 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
         }
         const sendState = (state) => socket.send(JSON.stringify({ type: "lease-state", ...state }));
         sendState(writeLease.connect(clientToken));
+        const heartbeat = setInterval(() => {
+          if (socket.readyState === 1) {
+            socket.send(JSON.stringify({ type: "heartbeat", observedAt: new Date().toISOString() }));
+          }
+        }, heartbeatIntervalMs);
+        heartbeat.unref?.();
         const diagnostics = new URL(request.url, "http://localhost").searchParams.get("diagnostics") === "true";
         let cursor = 0;
         const sendSnapshot = () => {
@@ -131,6 +140,7 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
         socket.on("close", () => {
           if (!disconnected) {
             disconnected = true;
+            clearInterval(heartbeat);
             unsubscribe();
             writeLease.disconnect(clientToken);
           }
