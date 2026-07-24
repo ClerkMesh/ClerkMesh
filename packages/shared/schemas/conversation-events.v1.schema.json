@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/conversation-events.v1.schema.json",
+  "title": "ClerkMesh conversation event snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "cursor", "events"],
+  "properties": {
+    "schema": { "const": "clerkmesh.conversation-events.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "cursor": { "type": "integer", "minimum": 0 },
+    "events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "kind", "payload"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": {
+          "enum": ["visible-message", "stream-fragment", "notification", "error", "primary-status", "extension-ui", "diagnostic"]
+        },
+        "payload": { "type": "object" }
+      }
+    }
+  }
+}
