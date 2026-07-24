@@ -2,6 +2,7 @@
 /clerkmesh-data/
 /clerkmesh-state/
 /cache/
+/node_modules/
 
 # Firstmate is vendored source, but its operational home data is local.
 /firstmate/data/

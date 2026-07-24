@@ -1,0 +1,4 @@
+packages:
+  - apps/web/client
+  - apps/web/server
+  - packages/*

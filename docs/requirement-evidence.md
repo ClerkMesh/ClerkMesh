@@ -5,8 +5,9 @@ A requirement is marked complete only when the linked commands and artifacts are
 | Requirement | Status | Automated check | Runtime evidence |
 |---|---|---|---|
 | PLAT-003 | partial | — | `evidence/gate-0/provenance.md` freezes Firstmate; dependency certification remains |
-| BASE-002 | partial | — | Vendored `firstmate/` layout exists; remaining monorepo layout remains |
-| BASE-003 | complete | `find firstmate -name .git -o -name .gitmodules` produces no output | `evidence/gate-0/provenance.md` |
+| BASE-001 | complete | `tests/gate0-layout.test.sh` asks pnpm to discover the plain workspace package set | `evidence/gate-0/workspace.md` |
+| BASE-002 | partial | `tests/gate0-layout.test.sh` verifies every required source boundary | `evidence/gate-0/workspace.md`; schema and launcher functionality within the skeleton remain |
+| BASE-003 | complete | `tests/gate0-layout.test.sh` rejects nested `.git` and `.gitmodules` paths | `evidence/gate-0/provenance.md`, `evidence/gate-0/workspace.md` |
 | BASE-004 | complete | Firstmate and root `.gitignore` ignore operational directories; launcher fixes `FM_HOME` and `FM_ROOT_OVERRIDE` to canonical `firstmate/` | `evidence/gate-0/init.md` |
 | PATH-001 | partial | `bin/clerkmesh` canonicalizes the root and exports all required absolute paths | External-input containment checks remain |
 | PATH-002 | complete | Launcher resolves product paths from its canonical location, independent of caller cwd | `evidence/gate-0/init.md` |

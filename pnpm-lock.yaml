@@ -1,0 +1,19 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  apps/web/client: {}
+
+  apps/web/server: {}
+
+  packages/clerk-cli: {}
+
+  packages/pi-primary-extension: {}
+
+  packages/shared: {}
