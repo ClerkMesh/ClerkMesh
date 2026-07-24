@@ -80,11 +80,20 @@ SH
 }
 
 # The commit this branch started from - the P1 "current main" baseline.
+# A BASE-003 vendored checkout belongs to an enclosing repository whose history
+# predates Firstmate's paths. Materialize the exact vendored tree as a standalone
+# Git fixture so historical lookups cannot accidentally target that repository.
+BASE_REPO=$ROOT
+if [ "$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null || true)" != "$ROOT" ]; then
+  BASE_REPO="$TMP_ROOT/standalone-firstmate"
+  fm_git_clone_root "$BASE_REPO"
+fi
+
 resolve_base_ref() {
   local ref base
-  for ref in main refs/heads/main origin/main refs/remotes/origin/main origin/HEAD refs/remotes/origin/HEAD; do
-    if git -C "$ROOT" rev-parse --verify -q "$ref^{commit}" >/dev/null; then
-      base=$(git -C "$ROOT" merge-base HEAD "$ref" 2>/dev/null) || continue
+  for ref in main refs/heads/main origin/main refs/remotes/origin/main origin/HEAD refs/remotes/origin/HEAD HEAD; do
+    if git -C "$BASE_REPO" rev-parse --verify -q "$ref^{commit}" >/dev/null; then
+      base=$(git -C "$BASE_REPO" merge-base HEAD "$ref" 2>/dev/null) || continue
       [ -n "$base" ] || continue
       printf '%s\n' "$base"
       return 0
@@ -131,7 +140,7 @@ build_old_bin() {  # <name> -> echoes root dir (root/bin/<script> is the entry p
   done
   cp -R "$ROOT/bin/backends" "$bin/backends"
   for f in $OLD_BIN_REFACTORED; do
-    git -C "$ROOT" show "$BASE_REF:bin/$f" > "$bin/$f"
+    git -C "$BASE_REPO" show "$BASE_REF:bin/$f" > "$bin/$f"
     chmod +x "$bin/$f"
   done
   printf '%s\n' "$root"
@@ -896,7 +905,17 @@ set -u
 { printf 'treehouse'; for a in "$@"; do printf '\x1f%s' "$a"; done; printf '\n'; } >> "${FM_TMUX_LOG:?}"
 exit 0
 SH
-  chmod +x "$fb/tmux" "$fb/treehouse"
+  cat > "$fb/tasks-axi" <<'SH'
+#!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+  '--version ') printf '%s\n' 'tasks-axi 0.2.2' ;;
+  'update --help') printf '%s\n' 'usage: tasks-axi update <id> [flags]' '  --archive-body' ;;
+  'mv --help') printf '%s\n' 'usage: tasks-axi mv <id> [<id>...] --to <path-or-dir>' ;;
+  'hold --help') printf '%s\n' 'usage: tasks-axi hold --kind captain' ;;
+esac
+exit 0
+SH
+  chmod +x "$fb/tmux" "$fb/treehouse" "$fb/tasks-axi"
   printf '%s\n' "$fb"
 }
 
