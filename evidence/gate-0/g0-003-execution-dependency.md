@@ -1,6 +1,6 @@
 # G0-003 execution dependency analysis
 
-Status: resolved; final real certification passed from `639d0c5`
+Status: resolved; final real certification passed from `f5f0b60`
 Scope: G0-003, PROC-001–003, CONV-002/004/011, PLAN-001–003, CERT-001, SEC-004
 
 > Resolution: the bounded shared launcher, TUI path, loopback fixed-operation Web process, and real two-order runner described below were implemented. Final evidence is in `lock-liveness.md` and `artifacts/g0-003-*`. The remainder of this file preserves the pre-implementation dependency analysis.

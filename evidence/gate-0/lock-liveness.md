@@ -22,7 +22,7 @@ Opt-in real certification:
 G0_003_LIVE=1 bash tests/cert/g0-003-real-web-tui.sh
 ```
 
-The final real run passed from source commit `639d0c5482d28181c3a2b674274b2d005d56cf3c` on macOS 26.4.1 arm64 with Pi 0.82.0, Node v24.16.0, pnpm 11.17.0, Git 2.54.0, tmux 3.6a, and Herdr 0.7.4. Treehouse was unavailable and was not used by G0-003. Exact final output is retained in [`artifacts/g0-003-real-web-tui.txt`](artifacts/g0-003-real-web-tui.txt); authoritative losing Firstmate output is retained for both orders in the adjacent `g0-003-*-loser-output.txt` artifacts.
+The final real run passed from source commit `f5f0b6063f60b49c323335eceb017973f0dbbf3e` on macOS 26.4.1 arm64 with Pi 0.82.0, Node v24.16.0, pnpm 11.17.0, Git 2.54.0, tmux 3.6a, and Herdr 0.7.4. Treehouse was unavailable and was not used by G0-003. Exact final output is retained in [`artifacts/g0-003-real-web-tui.txt`](artifacts/g0-003-real-web-tui.txt); authoritative losing Firstmate output is retained for both orders in the adjacent `g0-003-*-loser-output.txt` artifacts.
 
 ## Certified architecture
 
@@ -58,7 +58,9 @@ This certifies Firstmate's cooperative read-only behavior, not an OS sandbox (SE
 | `76c4d45` | certification assertions passed; cleanup proof incomplete | Independent post-run inspection found stale private tmux socket files. Added exact runner-owned socket removal and an assertion. |
 | `395127b` | passed | Both launch orders, mutation checks, winner re-acquire, process cleanup, socket cleanup, and artifact cleanup passed. |
 | post-cert validation | failed, then passed | The installed Pi 0.82.0 strict typecheck exposed its new generic `registerTool` and terminal-input return contracts in the tracked Calm extension. Added explicit generic preservation and an `undefined` return; the strict no-emit test then printed `ok - tracked Pi extensions pass strict no-emit typecheck against Pi 0.82.0`. |
-| `639d0c5` | passed final rerun | Repeated both real launch orders after all runtime, compatibility, documentation, and initial evidence changes were committed. Process, socket, and fixture cleanup were independently rechecked. |
+| `639d0c5` | passed rerun | Repeated both real launch orders after the compatibility, documentation, and initial evidence changes were committed. |
+| `f5f0b60` | passed final rerun | Repeated both real launch orders after adding fail-closed launch-state validation and whitespace-stable TUI evidence capture. Process, socket, and fixture cleanup were independently rechecked. |
+| final focused validation | failed intermittently, then passed 3/3 | The Calm E2E's post-Ctrl+O wait watched startup text that was already present and could capture Pi 0.82's intermediate redraw before tool output returned. Changed the existing test to wait for the actual `CALM_E2E_OUTPUT` behavior; three sequential reruns passed. |
 
 ## Boundary retained
 
