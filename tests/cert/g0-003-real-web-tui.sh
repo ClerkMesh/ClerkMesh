@@ -314,7 +314,7 @@ run_case() {
     start_tui
     loser_pid=$TUI_PI_PID
     run_tui_session_start
-    tui_capture > "$EVIDENCE_DIR/g0-003-$CASE_LABEL-loser-output.txt"
+    tui_capture | sed 's/[[:space:]]*$//' > "$EVIDENCE_DIR/g0-003-$CASE_LABEL-loser-output.txt"
     loser_output="$EVIDENCE_DIR/g0-003-$CASE_LABEL-loser-output.txt"
   else
     start_web

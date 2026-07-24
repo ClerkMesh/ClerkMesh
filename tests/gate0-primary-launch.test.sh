@@ -63,6 +63,15 @@ for path in "$FIXTURE/firstmate/data" "$FIXTURE/firstmate/state" "$FIXTURE/first
   [ -d "$path" ] || fail "init omitted launch-required Firstmate home directory: $path"
 done
 
+# Current-version conflicts must fail closed at launch rather than being treated as initialized.
+cp "$FIXTURE/clerkmesh-data/clerks.md" "$TMP/clerks.md.good"
+printf 'conflicting registry bytes\n' > "$FIXTURE/clerkmesh-data/clerks.md"
+if (cd / && PATH="$FAKEBIN:$PATH" CAPTURE_DIR="$CAPTURE" "$FIXTURE/bin/clerkmesh" primary --tui) >"$TMP/conflict.out" 2>"$TMP/conflict.err"; then
+  fail 'TUI launch accepted conflicting current-version state'
+fi
+grep -Fq 'conflicting current-version Clerk registry' "$TMP/conflict.err" || fail 'launch conflict refusal was not explicit'
+cp "$TMP/clerks.md.good" "$FIXTURE/clerkmesh-data/clerks.md"
+
 # Exercise the real public TUI entry from an unrelated caller cwd.
 (
   cd /

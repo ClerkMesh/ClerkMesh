@@ -163,13 +163,28 @@ init() {
   printf 'ClerkMesh initialized at %s\n' "$CLERKMESH_ROOT"
 }
 
+require_initialized() {
+  marker="$CLERKMESH_DATA/.clerkmesh-version"
+  [ -f "$marker" ] && [ ! -L "$marker" ] || fatal "ClerkMesh is not initialized; run bin/clerkmesh init first"
+  verify_provenance
+  preflight_init_state
+  for path in "$CLERKMESH_DATA" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS" "$CLERKMESH_CACHE" \
+    "$FM_HOME/data" "$FM_HOME/state" "$FM_HOME/projects"; do
+    [ -d "$path" ] && [ ! -L "$path" ] || fatal "incomplete initialized state at $path; run bin/clerkmesh init"
+  done
+  [ -f "$CLERKMESH_DATA/clerks.md" ] && [ ! -L "$CLERKMESH_DATA/clerks.md" ] || \
+    fatal "incomplete initialized Clerk registry; run bin/clerkmesh init"
+  path_exists "$CLERKMESH_CLERKS/escalation" || fatal "incomplete initialized Escalation Clerk; run bin/clerkmesh init"
+  validate_escalation
+}
+
 launch_primary_tui() {
-  command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
+  require_initialized
   exec node "$CLERKMESH_ROOT/packages/shared/src/primary-launch.mjs" tui
 }
 
 launch_gate0_web() {
-  command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
+  require_initialized
   exec node "$CLERKMESH_ROOT/apps/web/server/gate0-cert-server.mjs"
 }
 

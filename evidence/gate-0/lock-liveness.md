@@ -22,7 +22,7 @@ Opt-in real certification:
 G0_003_LIVE=1 bash tests/cert/g0-003-real-web-tui.sh
 ```
 
-The final real run passed from source commit `395127b456f82f9a3b47a18cd999c7373a3d8c49` on macOS 26.4.1 arm64 with Pi 0.82.0, Node v24.16.0, pnpm 11.17.0, Git 2.54.0, tmux 3.6a, and Herdr 0.7.4. Treehouse was unavailable and was not used by G0-003. Exact final output is retained in [`artifacts/g0-003-real-web-tui.txt`](artifacts/g0-003-real-web-tui.txt); authoritative losing Firstmate output is retained for both orders in the adjacent `g0-003-*-loser-output.txt` artifacts.
+The final real run passed from source commit `639d0c5482d28181c3a2b674274b2d005d56cf3c` on macOS 26.4.1 arm64 with Pi 0.82.0, Node v24.16.0, pnpm 11.17.0, Git 2.54.0, tmux 3.6a, and Herdr 0.7.4. Treehouse was unavailable and was not used by G0-003. Exact final output is retained in [`artifacts/g0-003-real-web-tui.txt`](artifacts/g0-003-real-web-tui.txt); authoritative losing Firstmate output is retained for both orders in the adjacent `g0-003-*-loser-output.txt` artifacts.
 
 ## Certified architecture
 
@@ -58,6 +58,7 @@ This certifies Firstmate's cooperative read-only behavior, not an OS sandbox (SE
 | `76c4d45` | certification assertions passed; cleanup proof incomplete | Independent post-run inspection found stale private tmux socket files. Added exact runner-owned socket removal and an assertion. |
 | `395127b` | passed | Both launch orders, mutation checks, winner re-acquire, process cleanup, socket cleanup, and artifact cleanup passed. |
 | post-cert validation | failed, then passed | The installed Pi 0.82.0 strict typecheck exposed its new generic `registerTool` and terminal-input return contracts in the tracked Calm extension. Added explicit generic preservation and an `undefined` return; the strict no-emit test then printed `ok - tracked Pi extensions pass strict no-emit typecheck against Pi 0.82.0`. |
+| `639d0c5` | passed final rerun | Repeated both real launch orders after all runtime, compatibility, documentation, and initial evidence changes were committed. Process, socket, and fixture cleanup were independently rechecked. |
 
 ## Boundary retained
 
