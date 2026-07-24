@@ -1,6 +1,6 @@
 // Firstmate's home-persistent Pi transcript presentation toggle.
 //
-// Compatibility boundary: Pi 0.81.1 exposes built-in ToolDefinitions, per-slot
+// Compatibility boundary: Pi 0.82.0 exposes built-in ToolDefinitions, per-slot
 // renderers, renderShell: "self", session_start replacement reasons,
 // ExtensionUIContext.setToolsExpanded(), setWorkingVisible(), and
 // setHiddenThinkingLabel(). The focused tests pin those assumptions. Exact-version
@@ -169,7 +169,7 @@ export default function (pi: ExtensionAPI) {
       return shell;
     };
 
-    pi.registerTool({
+    pi.registerTool<TParams, TDetails, TState>({
       ...original,
       renderShell: "self",
 
@@ -255,6 +255,7 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setToolsExpanded(!expanded);
         ctx.ui.setToolsExpanded(expanded);
       }, 0);
+      return undefined;
     });
   });
 

@@ -1,0 +1,42 @@
+G0-003 real Web/TUI certification
+command: G0_003_LIVE=1 bash tests/cert/g0-003-real-web-tui.sh
+source_commit: 395127b456f82f9a3b47a18cd999c7373a3d8c49
+platform: macOS 26.4.1 (25E253); arm64
+pi: 0.82.0 (/nix/store/5sk4nw6km9wjsvn4wk2xglx89a27pqkl-pi-coding-agent-0.82.0/bin/pi)
+node: v24.16.0
+pnpm: 11.17.0
+git: git version 2.54.0
+tmux: tmux 3.6a
+herdr: herdr 0.7.4
+treehouse: unavailable (not required by G0-003)
+model_calls: 0 (only Pi hidden-shell and direct RPC bash operations are used)
+case: web-wins-tui-loses
+  canonical_fm_home: /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.nuC7mWK94x/web-wins-tui-loses/repo/firstmate
+  winner_pid: 63666
+  loser_pid: 65195
+  holder_before: lock: held by live harness pid 63666
+  holder_after_loser_stop: lock: held by live harness pid 63666
+  lock_unchanged_by_loser: yes
+  wake_queue_unchanged_by_loser: yes
+  operational_manifest_unchanged_by_loser: yes
+  loser_authoritative_mode: read-only
+  winner_reacquire: writable
+  winner_live_until_controlled_shutdown: yes
+  process_cleanup: no fixture process remains
+ok - web-wins-tui-loses
+case: tui-wins-web-loses
+  canonical_fm_home: /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.nuC7mWK94x/tui-wins-web-loses/repo/firstmate
+  winner_pid: 66859
+  loser_pid: 67357
+  holder_before: lock: held by live harness pid 66859
+  holder_after_loser_stop: lock: held by live harness pid 66859
+  lock_unchanged_by_loser: yes
+  wake_queue_unchanged_by_loser: yes
+  operational_manifest_unchanged_by_loser: yes
+  loser_authoritative_mode: read-only
+  winner_reacquire: writable
+  winner_live_until_controlled_shutdown: yes
+  process_cleanup: no fixture process remains
+ok - tui-wins-web-loses
+ok - G0-003 real Pi 0.82.0 Web/TUI competition passed in both launch orders
+cleanup: both private tmux servers, both Web processes, and all four Pi processes exited; disposable fixtures removed by EXIT trap

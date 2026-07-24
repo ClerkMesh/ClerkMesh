@@ -1,15 +1,17 @@
 # G0-003 execution dependency analysis
 
-Status: analysis complete; certification still blocked by missing launch paths  
+Status: resolved; real certification passed from `395127b`
 Scope: G0-003, PROC-001–003, CONV-002/004/011, PLAN-001–003, CERT-001, SEC-004
+
+> Resolution: the bounded shared launcher, TUI path, loopback fixed-operation Web process, and real two-order runner described below were implemented. Final evidence is in `lock-liveness.md` and `artifacts/g0-003-*`. The remainder of this file preserves the pre-implementation dependency analysis.
 
 ## Conclusion
 
-This is **not a specification contradiction**. It is a resolvable Gate-0 implementation dependency.
+This was **not a specification contradiction**. It was a resolvable Gate-0 implementation dependency.
 
 Gate 0 explicitly includes the “Web/TUI minimal startup chain” before Slice 1, while Slice 1 owns the Web Conversation vertical. Therefore G0-003 needs only a real foreground Web process that starts and owns a real Pi RPC Primary, plus a real TUI launcher, so both reach Firstmate's existing session-start/lock owner against one canonical home. It does **not** need session browsing, a Captain message, a model call, streaming, WebSocket leases, extension UI, reconnect, or a React Conversations page.
 
-The current branch cannot certify G0-003: `bin/clerkmesh` implements only `init`; `apps/web/server/package.json`, `apps/web/client/package.json`, and `packages/pi-primary-extension/package.json` are manifests without source; and `bin/clerkmesh primary --tui` exits with `error: usage: clerkmesh init`. This is an implementation blocker to Gate 0, not a Captain-only decision and not grounds to enter Slice 1.
+At the time of this analysis, the branch could not certify G0-003: `bin/clerkmesh` implemented only `init`; the Web and extension packages were manifests without source; and the TUI command was absent. The bounded implementation resolved that blocker without entering Slice 1.
 
 ## Normative boundary
 
