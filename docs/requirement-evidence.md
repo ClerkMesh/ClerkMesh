@@ -93,6 +93,11 @@ A requirement is marked complete only when the linked commands and artifacts are
 | PROJ-007 | partial | `test:slice3-project-catalog` drives real Git review, local landing, and teardown, proving the full diff is based on local `main`; `yolo=off` cannot land without the explicit `--captain-approved` gate action; `yolo=on` may auto-approve but cannot bypass clean fast-forward safety; unlanded work is preserved, and only safely landed task state is returned through the worktree-provider boundary | Validation artifacts and genuine runtime landed proof remain |
 | PROJ-008 | partial | `test:slice3-project-catalog` proves target-mode readiness is checked before registry mutation, failed switches preserve authoritative bytes, successful switches preserve the orthogonal yolo setting, and existing Task metadata remains fixed to its spawn-time mode while the registry changes for future dispatch | Genuine remote-mode dispatch regression remains |
 
+| HUMAN-001 | partial | `test:slice4-human` freezes the injected Primary rule that a Human Clerk remains in the existing Firstmate Task/brief and creates no Worker, wake, endpoint, capability, worktree, parallel human record, or synthetic Agent status | Isolated end-to-end fixture evidence remains |
+| HUMAN-002 | partial | `test:slice4-human` requires visible Captain-relayed start/progress/questions/evidence/result, a Markdown Firstmate report with local Captain actor provenance, and acceptance-criteria evaluation without inferred completion | Deterministic report control plane and isolated conversation/report evidence remain |
+| HUMAN-003 | partial | `test:slice4-human` requires Project, Git, shell, or tool changes to become a separate dependent Agent Task with a fresh Agent Clerk selection | Isolated dependency and selection evidence remains |
+| HUMAN-004 | partial | The protocol explicitly distinguishes the Captain as local relay rather than account or Clerk | Company/Work presentation and fixture evidence remain |
+
 ## Slice 2 compact requirement-to-test matrix
 
 | Exit | Requirements | Planned proof | Dependencies / status |
@@ -123,11 +128,24 @@ Current bounded Project-add coverage: `test:slice3-project-catalog` proves an ex
 
 Current bounded local delivery coverage: `PATH="$PWD/cache/bin:$PATH" S3_001_LIVE=1 corepack pnpm run cert:slice3-local-delivery` passed the tracked isolated genuine-runtime lifecycle for Pi/Herdr/Treehouse Worker validation, authoritative full-diff review, yolo-off refusal, explicit approval, exact-tip fast-forward landing, and landed teardown. The fixture exposes a Project-owned deterministic completion command so Worker execution and the Git delivery transition are one verifiable action rather than depending on probabilistic multi-step prompt compliance. The injected Primary protocol requires the same mode-specific `fm-project-preflight.sh` used by spawn before compile or spawn, fails before any execution-state mutation, and preserves local-only independence from forge probes. `test:slice3-project-catalog` proves local-only Worker briefs contain no GitHub, PR-tooling, `gh-axi`, or No Mistakes instructions while retaining validation and guarded fast-forward requirements. Valid Project inputs create a no-remote `main` repository with fixed README and deterministic baseline commit before atomically appending its `local-only` Firstmate registry entry. Invalid names, duplicate Projects, and malformed registry authority are refused before any Project write; post-creation failures retain and report the incomplete managed path. A real-Git review/landing contract additionally proves full diff disclosure, yolo-off explicit Captain approval, exact reviewed-tip landing by clean fast-forward, and yolo-on refusal after a divergent-main race. The teardown contract preserves unlanded work and task metadata without invoking Treehouse, then returns the worktree through the provider boundary and removes volatile task authority only after the exact tip is present on local `main`.
 
+## Slice 4 compact requirement-to-test matrix
+
+| Exit | Requirements | Planned proof | Dependencies / status |
+|---|---|---|---|
+| S4-001 | HUMAN-001–002, OWN-001–003 | isolated Human Clerk Task from visible start through accepted Markdown report, proving absence of Worker/endpoint/capability/worktree and synthetic Agent state | Partial: Primary behavior contract frozen; deterministic report recording and fixture certification remain |
+| S4-002 | HUMAN-001, HUMAN-004, CLERK-004, EXEC-005–006 | ordinary human selection plus explicit Captain-takeover Escalation transcript | Partial: selection rules and genuine explicit Escalation evidence exist; ordinary human end-to-end evidence remains |
+| S4-003 | HUMAN-003, EXEC-004, READ-005 | accepted human result followed by a dependent Agent Task and fresh Clerk selection | Partial: behavior contract frozen; dependency/control-plane and projection evidence remain |
+| S4-004 | HUMAN-001–004, AUTO-005–006 | isolated implementation-Agent-as-test-Captain success, refusal, and restart fixtures retaining conversation, report, projections, and negative Worker evidence | Not run; depends on the Human execution control plane and read presentation |
+| S4-005 | PLAN-003, AUTO-005 | complete engineering evidence and tracked `awaiting-final-captain-uat` marker | Not met; depends on S4-001 through S4-004 |
+
+Dependencies: Firstmate remains the only Task, brief, report, dependency, and delivery authority; Pi Session remains conversation authority; the Clerk approved commit and execution mode remain Clerk Git authority. Human execution must not invoke Herdr, Treehouse, Worker capabilities, or manufacture runtime facts. The existing S2-007 genuine Escalation evidence is reusable only for explicit-takeover selection, not as proof of the ordinary Human Clerk lifecycle.
+
 ## Stage status
 
 - Gate 0: **complete**
 - Slice 1: **complete** (S1-001 through S1-006)
 - Slice 2: **complete** (S2-001 through S2-007)
 - Slice 3: **complete** (S3-001 through S3-007)
-- Slice 4–5: **not started**
+- Slice 4: **in progress** (behavior contract frozen; S4-001 through S4-005 unmet)
+- Slice 5: **not started**
 - Release Gate: **not started**
