@@ -147,7 +147,7 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
-| S5-001 | LEARN-001–002 | explicit immutable Source capture plus automatic-learning refusal matrix | **In progress:** explicit imports and accepted Human Task reports now cross the production immutable Source boundary, with agent-generated warnings and the negative origin matrix passing in `test:slice5-learning`/`test:slice4-human`; isolated fixture certification evidence remains |
+| S5-001 | LEARN-001–002 | explicit immutable Source capture plus automatic-learning refusal matrix | **Complete:** production explicit imports and accepted Human reports create immutable Sources; warning and automatic-origin refusal matrices pass; the genuine-Pi isolated fixture verifies exact report bytes and task/hash/Captain provenance; `test:slice5-learning`, `test:slice4-human`, `cert:slice4-human-agent-handoff`; `evidence/slice-5/s5-001-learning-source-capture.md` |
 | S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | Not started |
 | S5-003 | LEARN-005 | complete review, revision invalidation, HEAD race stale, and re-extraction | Not started |
 | S5-004 | LEARN-006 | independent approve/reject with approved-target-only CAS commit | Not started |
@@ -162,5 +162,5 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 2: **complete** (S2-001 through S2-007)
 - Slice 3: **complete** (S3-001 through S3-007)
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
-- Slice 5: **in progress** (S5-001 production capture paths implemented; isolated accepted-Human fixture evidence remains)
+- Slice 5: **in progress** (S5-001 complete; S5-002 genuine two-target extraction is next)
 - Release Gate: **not started**

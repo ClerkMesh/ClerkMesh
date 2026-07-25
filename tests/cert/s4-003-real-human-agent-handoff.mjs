@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { createPiRpcClient } from "../../apps/web/server/src/pi-rpc-client.mjs";
@@ -80,6 +81,22 @@ try {
   await writeFile(humanBrief, "# Human design review\n\nAcceptance criterion: provide the exact approved sentence for README.md.\n");
   await run(join(productRoot, "packages/clerk-cli/bin/clerk-context-compile.sh"), ["--repository", human.repository, "--commit", human.commit, "--task-id", humanTask, "--reason", "Human judgment is required.", "--boundaries", "Do not change the Project.", "--brief", humanBrief]);
   await run(join(productRoot, "firstmate/bin/fm-human-report.sh"), ["--task", humanTask, "--outcome", "accepted", "--evaluation", "The exact README sentence was supplied."], { input: "## Accepted wording\n\nAdd: `Human-reviewed change.`\n" });
+  const report = await readFile(join(data, humanTask, "report.md"));
+  const sourceRoot = join(state, "learning-sources");
+  const sourceIds = (await readdir(sourceRoot)).filter((entry) => !entry.startsWith("."));
+  assert.equal(sourceIds.length, 1, "accepted Human result must create exactly one Learning Source");
+  const sourceId = sourceIds[0];
+  const source = await readFile(join(sourceRoot, sourceId, "source.md"));
+  const sourceManifest = JSON.parse(await readFile(join(sourceRoot, sourceId, "manifest.json"), "utf8"));
+  assert.deepEqual(source, report, "Learning Source must preserve the accepted Human report exactly");
+  assert.equal(sourceManifest.schema, "clerkmesh.learning-source.v1");
+  assert.equal(sourceManifest.provenance.origin, "accepted_human_task");
+  assert.equal(sourceManifest.provenance.actor, "captain-local");
+  assert.equal(sourceManifest.provenance.agentGenerated, false);
+  assert.equal(sourceManifest.provenance.humanTask.taskId, humanTask);
+  assert.equal(sourceManifest.provenance.humanTask.outcome, "accepted");
+  assert.equal(sourceManifest.provenance.humanTask.reportSha256, createHash("sha256").update(report).digest("hex"));
+  assert.equal(sourceManifest.contentSha256, createHash("sha256").update(source).digest("hex"));
   await run(join(productRoot, "node_modules", ".bin", "tasks-axi"), ["done", humanTask]);
 
   const child = spawn("pi", ["--no-extensions", "-e", join(productRoot, "packages/pi-primary-extension/index.ts"), "--no-session", "--mode", "rpc"], {
@@ -114,7 +131,7 @@ try {
     assert.deepEqual(context.context.allowlist, []);
     assert.notEqual(context.context.clerk.name, "design-reviewer");
     console.log("ok - S4-003 real Primary created the dependent Agent Task and freshly selected its Agent Clerk");
-    console.log(`human_task: ${humanTask}; agent_task: ${agentTask}; agent_clerk_commit: ${editor.commit}`);
+    console.log(`human_task: ${humanTask}; learning_source: ${sourceId}; source_sha256: ${sourceManifest.contentSha256}; agent_task: ${agentTask}; agent_clerk_commit: ${editor.commit}`);
   } finally {
     if (child.exitCode === null) child.kill("SIGTERM");
     await new Promise((done) => child.exitCode !== null ? done() : child.once("exit", done));
