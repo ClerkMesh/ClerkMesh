@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseClerkRegistry, renderClerkRegistry } from "../packages/clerk-cli/src/clerk-registry.mjs";
+import { parseClerkRegistry, publishClerkRegistryAtomic, renderClerkRegistry } from "../packages/clerk-cli/src/clerk-registry.mjs";
 
 const root = await realpath(await mkdtemp(join(tmpdir(), "clerkmesh-registry-")));
 try {
@@ -21,6 +21,22 @@ try {
     { name: "product-alice", status: "archived", builtIn: false },
   ]);
   assert.equal(renderClerkRegistry(await parseClerkRegistry({ registryPath: registry, clerksRoot: clerks })), rendered);
+
+  const activeRecords = records.map((record) => record.name === "product-alice" ? { ...record, status: "active" } : record);
+  await publishClerkRegistryAtomic({ registryPath: registry, clerksRoot: clerks, records: activeRecords });
+  assert.equal((await parseClerkRegistry({ registryPath: registry, clerksRoot: clerks }))[1].status, "active");
+  const published = await readFile(registry, "utf8");
+  await assert.rejects(
+    publishClerkRegistryAtomic({
+      registryPath: registry,
+      clerksRoot: clerks,
+      records: [...activeRecords, { name: "missing", path: join(clerks, "missing"), status: "active", builtIn: false }],
+    }),
+    /repository does not exist/,
+  );
+  assert.equal(await readFile(registry, "utf8"), published, "failed publication must preserve authoritative registry bytes");
+  assert.deepEqual((await readdir(data)).sort(), ["clerks.md"], "failed publication must clean temporary files");
+  await writeFile(registry, rendered);
 
   async function rejects(mutator, pattern) {
     await writeFile(registry, mutator(rendered));

@@ -1,5 +1,6 @@
-import { lstat, readFile, realpath } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { lstat, open, readFile, realpath, rename, rm } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { randomUUID } from "node:crypto";
 
 const HEADER = "# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|\n";
 const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -44,6 +45,34 @@ export async function parseClerkRegistry({ registryPath, clerksRoot }) {
   if (!escalation || escalation.status !== "active" || !escalation.builtIn) fail("Escalation Clerk must be active and built-in");
   if (records.some((record) => record.name !== "escalation" && record.builtIn)) fail("only Escalation Clerk may be built-in");
   return Object.freeze(records);
+}
+
+export async function publishClerkRegistryAtomic({ registryPath, clerksRoot, records }) {
+  const target = resolve(registryPath);
+  const temporary = join(dirname(target), `.clerks.md.${process.pid}.${randomUUID()}.tmp`);
+  const rendered = renderClerkRegistry(records);
+  let file;
+  try {
+    file = await open(temporary, "wx", 0o600);
+    await file.writeFile(rendered, "utf8");
+    await file.sync();
+    await file.close();
+    file = undefined;
+
+    // Validate the exact bytes and canonical repository paths before publication.
+    await parseClerkRegistry({ registryPath: temporary, clerksRoot });
+    await rename(temporary, target);
+    const directory = await open(dirname(target), "r");
+    try {
+      await directory.sync();
+    } finally {
+      await directory.close();
+    }
+  } catch (error) {
+    await file?.close().catch(() => {});
+    await rm(temporary, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
 export function renderClerkRegistry(records) {
