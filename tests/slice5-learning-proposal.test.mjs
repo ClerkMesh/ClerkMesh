@@ -6,6 +6,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
 import { createLearningProposal, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 
 const exec = promisify(execFile);
 const fixture = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-learning-proposal-"));
@@ -67,6 +68,20 @@ try {
   assert.deepEqual(persisted, proposal);
 
   const launched = [];
+  const herdrCalls = [];
+  const launchTarget = createHerdrLearningLauncher({
+    session: "isolated-learning",
+    commandForTarget: ({ target, sourceDirectory }) => `pi -p 'Extract ${target} from ${sourceDirectory}'`,
+    execute: async (command, args) => {
+      herdrCalls.push([command, ...args]);
+      if (args[0] === "workspace") return { stdout: JSON.stringify({ result: { workspace: { workspace_id: "learning-workspace" }, tab: { tab_id: "seed-tab" } } }) };
+      if (args[0] === "tab" && args[1] === "create") {
+        const target = args[args.indexOf("--label") + 1].replace("learn-", "");
+        return { stdout: JSON.stringify({ result: { tab: { tab_id: `tab-${target}` }, root_pane: { pane_id: `pane-${target}` } } }) };
+      }
+      return { stdout: JSON.stringify({ result: {} }) };
+    },
+  });
   const learningRunsRoot = path.join(fixture, "clerkmesh-state", "learning-runs");
   const extraction = await startLearningExtraction({
     root: proposalRoot,
@@ -76,16 +91,15 @@ try {
     startedAt: "2026-03-01T00:03:00.000Z",
     launchTarget: async (request) => {
       launched.push(request);
-      return {
-        backend: "herdr",
-        session: "isolated-learning",
-        workspaceId: "learning-workspace",
-        tabId: `tab-${request.target}`,
-        paneId: `pane-${request.target}`,
-      };
+      return launchTarget(request);
     },
   });
   assert.deepEqual(launched.map(({ target, workspaceId }) => [target, workspaceId]), [["alpha", undefined], ["beta", "learning-workspace"]]);
+  assert.equal(herdrCalls.filter((call) => call[1] === "workspace" && call[2] === "create").length, 1);
+  assert.equal(herdrCalls.filter((call) => call[1] === "tab" && call[2] === "create").length, 2);
+  assert.equal(herdrCalls.filter((call) => call[1] === "pane" && call[2] === "run").length, 2);
+  assert.equal(herdrCalls.filter((call) => call[1] === "tab" && call[2] === "close" && call[3] === "seed-tab").length, 1);
+  assert.ok(herdrCalls.every((call) => call.slice(-2).join(" ") === "--session isolated-learning"));
   assert.equal(extraction.manifest.state, "extracting");
   assert.deepEqual(extraction.manifest.targets.map(({ state }) => state), ["extracting", "extracting"]);
   assert.deepEqual(extraction.endpoints.map(({ target, tabId }) => [target, tabId]), [["alpha", "tab-alpha"], ["beta", "tab-beta"]]);
