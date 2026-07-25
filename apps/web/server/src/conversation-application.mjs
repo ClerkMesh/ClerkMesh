@@ -27,6 +27,7 @@ export function createConversationApplication({
   clerksRoot = resolve(clerkmeshRoot, "clerks"),
   projectCatalog = projectClerkCatalog,
   queryTaskGraph = queryFirstmateTaskGraph,
+  workProjectionPollers = createWorkProjectionPollers({ firstmateRoot: root }),
 } = {}) {
   const eventProjection = new ConversationEventProjection();
   const supervisor = createPiPrimarySupervisor({
@@ -34,7 +35,6 @@ export function createConversationApplication({
     spawnPrimary: launchPrimary,
   });
   const writeLease = createConversationWriteLease();
-  const workProjectionPollers = createWorkProjectionPollers({ firstmateRoot: root });
 
   async function catalog() {
     return buildConversationSessionCatalog({ firstmateRoot: root, listSessions });
