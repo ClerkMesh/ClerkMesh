@@ -1,0 +1,11 @@
+S3-007 genuine direct-PR certification
+run-date-utc: 2026-07-25
+repository: ClerkMesh/clerkmesh-cert-fixture (private Captain-authorized fixture)
+gh: 2.96.0
+gh-axi: 0.1.28
+git: 2.54.0
+command: S3_007_REMOTE_REPOSITORY=git@github.com:ClerkMesh/clerkmesh-cert-fixture.git S3_007_LIVE=1 corepack pnpm run cert:slice3-direct-pr
+
+ok	direct-PR-created	https://github.com/ClerkMesh/clerkmesh-cert-fixture/pull/1
+ok	direct-PR-full-diff-reviewed	28e0e53e59526f71c383ed80befe953a694d7dde
+ok	direct-PR-squash-merged
