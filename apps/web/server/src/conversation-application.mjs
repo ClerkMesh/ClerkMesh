@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { clerkmeshRoot, firstmateHome, spawnPrimary } from "../../../../packages/shared/src/primary-launch.mjs";
 import { projectClerkCatalog } from "./clerk-catalog.mjs";
+import { queryFirstmateTaskGraph } from "./firstmate-task-graph.mjs";
 import { ConversationEventProjection } from "./conversation-event-projection.mjs";
 import { createConversationServer } from "./conversation-server.mjs";
 import { buildConversationSessionCatalog } from "./conversation-session-catalog.mjs";
@@ -23,6 +24,7 @@ export function createConversationApplication({
   registryPath = resolve(clerkmeshRoot, "clerkmesh-data/clerks.md"),
   clerksRoot = resolve(clerkmeshRoot, "clerks"),
   projectCatalog = projectClerkCatalog,
+  queryTaskGraph = queryFirstmateTaskGraph,
 } = {}) {
   const eventProjection = new ConversationEventProjection();
   const supervisor = createPiPrimarySupervisor({
@@ -49,6 +51,7 @@ export function createConversationApplication({
     writeLease,
     eventProjection,
     clerkCatalog: () => projectCatalog({ registryPath, clerksRoot }),
+    taskGraph: () => queryTaskGraph({ command: resolve(root, "bin/fm-task-graph.sh") }),
     logger,
     ...(heartbeatIntervalMs === undefined ? {} : { heartbeatIntervalMs }),
   });
