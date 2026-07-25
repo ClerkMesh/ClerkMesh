@@ -1377,6 +1377,12 @@ if [ "${HERDR_PROJECTED:-0}" -eq 1 ]; then
   spawn_herdr_presentation_order_lock_release
 fi
 spawn_send_key "$T" Enter
+if [ "$KIND" != secondmate ]; then
+  if ! "$FM_ROOT/bin/fm-task-activity-append.sh" --task "$ID" --type dispatch-started --summary "Worker dispatch started" >/dev/null; then
+    echo "error: could not record structured Task dispatch activity" >&2
+    exit 1
+  fi
+fi
 if [ "$KIND" = secondmate ]; then
   if ! fm_config_reread_discard_pending "$PROJ_ABS" "$ID" "$FM_HOME"; then
     if fm_config_reread_quarantine_pending "$PROJ_ABS" "$ID" "$FM_HOME"; then
