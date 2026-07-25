@@ -44,6 +44,7 @@ META="$STATE/$ID.meta"
 
 WT=$(grep '^worktree=' "$META" | cut -d= -f2-)
 PROJ=$(grep '^project=' "$META" | cut -d= -f2-)
+MODE=$(grep '^mode=' "$META" | tail -1 | cut -d= -f2- || true)
 [ -n "$WT" ] || { echo "error: meta for task $ID is missing worktree=" >&2; exit 1; }
 [ -n "$PROJ" ] || { echo "error: meta for task $ID is missing project=" >&2; exit 1; }
 [ -d "$WT" ] || { echo "error: worktree for task $ID is missing: $WT" >&2; exit 1; }
@@ -70,8 +71,17 @@ DEFAULT=$(default_branch) || { echo "error: cannot determine default branch for 
 BRANCH="fm/$ID"
 if ! git -C "$WT" rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null; then
   BRANCH=$(git -C "$WT" symbolic-ref --quiet --short HEAD 2>/dev/null || true)
-  [ -n "$BRANCH" ] || { echo "error: branch fm/$ID does not exist and worktree $WT is detached" >&2; exit 1; }
-  git -C "$WT" rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null || { echo "error: branch $BRANCH does not exist in $WT" >&2; exit 1; }
+  if [ -z "$BRANCH" ] && [ "$MODE" = local-only ]; then
+    # Treehouse v2 worktrees are detached. For local-only delivery the
+    # metadata-owned worktree HEAD is the authoritative review candidate.
+    BRANCH=$(git -C "$WT" rev-parse --verify "HEAD^{commit}" 2>/dev/null) || {
+      echo "error: detached local-only worktree $WT has no commit at HEAD" >&2
+      exit 1
+    }
+  else
+    [ -n "$BRANCH" ] || { echo "error: branch fm/$ID does not exist and worktree $WT is detached" >&2; exit 1; }
+    git -C "$WT" rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null || { echo "error: branch $BRANCH does not exist in $WT" >&2; exit 1; }
+  fi
 fi
 
 pr_number_from_target() {

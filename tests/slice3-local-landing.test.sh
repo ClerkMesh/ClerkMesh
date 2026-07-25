@@ -20,14 +20,18 @@ git -C "$PROJECT" commit -qm baseline
 BASE=$(git -C "$PROJECT" rev-parse HEAD)
 
 make_task() {
-  local id=$1 yolo=${2:-off} wt="$TMP/$1-wt"
-  git -C "$PROJECT" worktree add -qb "fm/$id" "$wt" main
+  local id=$1 yolo=${2:-off} checkout=${3:-branch} wt="$TMP/$1-wt"
+  if [ "$checkout" = detached ]; then
+    git -C "$PROJECT" worktree add -q --detach "$wt" main
+  else
+    git -C "$PROJECT" worktree add -qb "fm/$id" "$wt" main
+  fi
   printf 'project=%s\nworktree=%s\nmode=local-only\nyolo=%s\ntype=ship\n' "$PROJECT" "$wt" "$yolo" > "$STATE/$id.meta"
   printf '%s\n' "$wt"
 }
 
 TASK=land-ok
-WT=$(make_task "$TASK")
+WT=$(make_task "$TASK" off detached)
 printf 'accepted result\n' > "$WT/result.txt"
 git -C "$WT" add result.txt
 git -C "$WT" commit -qm 'deliver accepted result'

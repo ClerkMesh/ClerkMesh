@@ -29,6 +29,7 @@ META="$STATE/$ID.meta"
 [ -f "$META" ] || { echo "error: no meta for task $ID at $META" >&2; exit 1; }
 
 PROJ=$(grep '^project=' "$META" | cut -d= -f2-)
+WT=$(grep '^worktree=' "$META" | cut -d= -f2-)
 MODE=$(grep '^mode=' "$META" | cut -d= -f2- || true)
 YOLO=$(grep '^yolo=' "$META" | tail -1 | cut -d= -f2- || true)
 [ -n "$YOLO" ] || YOLO=off
@@ -56,7 +57,12 @@ default_branch() {
 }
 
 BRANCH="fm/$ID"
-git -C "$PROJ" rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null || { echo "error: branch $BRANCH does not exist in $PROJ" >&2; exit 1; }
+TARGET="refs/heads/$BRANCH"
+if ! git -C "$PROJ" rev-parse --verify --quiet "$TARGET^{commit}" >/dev/null; then
+  [ -n "$WT" ] && [ -d "$WT" ] || { echo "error: branch $BRANCH does not exist and task worktree is missing" >&2; exit 1; }
+  [ -z "$(git -C "$WT" symbolic-ref --quiet --short HEAD 2>/dev/null || true)" ] || { echo "error: branch $BRANCH does not exist in $PROJ" >&2; exit 1; }
+  TARGET=$(git -C "$WT" rev-parse --verify "HEAD^{commit}" 2>/dev/null) || { echo "error: detached task worktree has no commit at HEAD" >&2; exit 1; }
+fi
 
 DEFAULT=$(default_branch) || { echo "error: cannot determine default branch for $PROJ; expected origin/HEAD, main, or master" >&2; exit 1; }
 
@@ -70,13 +76,13 @@ if [ -n "$(git -C "$PROJ" status --porcelain 2>/dev/null | head -1)" ]; then
 fi
 
 # Clean fast-forward only: DEFAULT must be an ancestor of BRANCH.
-if ! git -C "$PROJ" merge-base --is-ancestor "$DEFAULT" "$BRANCH"; then
-  echo "REFUSED: $BRANCH is not a fast-forward of $DEFAULT (it has diverged)." >&2
-  echo "Have the crewmate rebase $BRANCH onto $DEFAULT, then retry." >&2
+if ! git -C "$PROJ" merge-base --is-ancestor "$DEFAULT" "$TARGET"; then
+  echo "REFUSED: task $ID candidate is not a fast-forward of $DEFAULT (it has diverged)." >&2
+  echo "Have the crewmate rebase the task candidate onto $DEFAULT, then retry." >&2
   exit 1
 fi
 
 before=$(git -C "$PROJ" rev-parse --short "$DEFAULT")
-git -C "$PROJ" merge --ff-only "$BRANCH" >/dev/null
+git -C "$PROJ" merge --ff-only "$TARGET" >/dev/null
 after=$(git -C "$PROJ" rev-parse --short "$DEFAULT")
 echo "merged $BRANCH into local $DEFAULT ($before -> $after) in $PROJ"
