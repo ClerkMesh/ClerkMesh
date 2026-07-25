@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ClerkMesh launcher. Usage: clerkmesh init | primary --tui | web --gate0-cert
+# ClerkMesh launcher. Usage: clerkmesh init | primary --tui | web [--gate0-cert]
 set -eu
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
@@ -183,6 +183,11 @@ launch_primary_tui() {
   exec node "$CLERKMESH_ROOT/packages/shared/src/primary-launch.mjs" tui
 }
 
+launch_web() {
+  require_initialized
+  exec node "$CLERKMESH_ROOT/apps/web/server/src/conversation-main.mjs"
+}
+
 launch_gate0_web() {
   require_initialized
   exec node "$CLERKMESH_ROOT/apps/web/server/gate0-cert-server.mjs"
@@ -198,8 +203,13 @@ case "${1:-}" in
     launch_primary_tui
     ;;
   web)
-    [ "$#" -eq 2 ] && [ "${2:-}" = --gate0-cert ] || fatal "usage: clerkmesh web --gate0-cert"
-    launch_gate0_web
+    if [ "$#" -eq 1 ]; then
+      launch_web
+    elif [ "$#" -eq 2 ] && [ "${2:-}" = --gate0-cert ]; then
+      launch_gate0_web
+    else
+      fatal "usage: clerkmesh web [--gate0-cert]"
+    fi
     ;;
-  *) fatal "usage: clerkmesh init | primary --tui | web --gate0-cert" ;;
+  *) fatal "usage: clerkmesh init | primary --tui | web [--gate0-cert]" ;;
 esac
