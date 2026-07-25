@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { clerkmeshRoot, firstmateHome, spawnPrimary } from "../../../../packages/shared/src/primary-launch.mjs";
 import { projectClerkCatalog } from "./clerk-catalog.mjs";
 import { queryFirstmateTaskGraph } from "./firstmate-task-graph.mjs";
+import { composeTaskDetail } from "./task-detail.mjs";
 import { ConversationEventProjection } from "./conversation-event-projection.mjs";
 import { createConversationServer } from "./conversation-server.mjs";
 import { buildConversationSessionCatalog } from "./conversation-session-catalog.mjs";
@@ -52,6 +53,11 @@ export function createConversationApplication({
     eventProjection,
     clerkCatalog: () => projectCatalog({ registryPath, clerksRoot }),
     taskGraph: () => queryTaskGraph({ command: resolve(root, "bin/fm-task-graph.sh") }),
+    taskDetail: async (taskId) => composeTaskDetail({
+      taskId,
+      taskGraph: await queryTaskGraph({ command: resolve(root, "bin/fm-task-graph.sh") }),
+      firstmateRoot: root,
+    }),
     logger,
     ...(heartbeatIntervalMs === undefined ? {} : { heartbeatIntervalMs }),
   });

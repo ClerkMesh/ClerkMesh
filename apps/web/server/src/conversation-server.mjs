@@ -15,6 +15,8 @@ const clerkCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/clerk
 const clerkCatalogSchema = JSON.parse(await readFile(clerkCatalogSchemaUrl, "utf8"));
 const taskGraphSchemaUrl = new URL("../../../../packages/shared/schemas/fm-task-graph.v1.schema.json", import.meta.url);
 const taskGraphSchema = JSON.parse(await readFile(taskGraphSchemaUrl, "utf8"));
+const taskDetailSchemaUrl = new URL("../../../../packages/shared/schemas/clerkmesh-task-detail.v1.schema.json", import.meta.url);
+const taskDetailSchema = JSON.parse(await readFile(taskDetailSchemaUrl, "utf8"));
 const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function isLoopbackAuthority(value, scheme = "http:") {
@@ -44,7 +46,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, taskGraph, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -58,11 +60,15 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   const validateCatalog = ajv.compile(catalogSchema);
   const validateClerkCatalog = ajv.compile(clerkCatalogSchema);
   const validateTaskGraph = ajv.compile(taskGraphSchema);
+  const validateTaskDetail = ajv.compile(taskDetailSchema);
   if (clerkCatalog !== undefined && typeof clerkCatalog !== "function") {
     throw new TypeError("clerkCatalog must be a function");
   }
   if (taskGraph !== undefined && typeof taskGraph !== "function") {
     throw new TypeError("taskGraph must be a function");
+  }
+  if (taskDetail !== undefined && typeof taskDetail !== "function") {
+    throw new TypeError("taskDetail must be a function");
   }
   const app = Fastify({ logger, ajv: { customOptions: { removeAdditional: false } } });
 
@@ -112,6 +118,19 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
         return projection;
       } catch {
         return reply.code(503).send({ error: "Task graph is unavailable." });
+      }
+    });
+  }
+
+  if (taskDetail !== undefined) {
+    app.get("/api/work/tasks/:taskId", async (request, reply) => {
+      try {
+        const projection = await taskDetail(request.params.taskId);
+        if (projection === null) return reply.code(404).send({ error: "Task was not found." });
+        if (!validateTaskDetail(projection)) throw new Error("invalid Task detail projection");
+        return projection;
+      } catch {
+        return reply.code(503).send({ error: "Task detail is unavailable." });
       }
     });
   }
