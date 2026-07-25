@@ -54,7 +54,8 @@ A requirement is marked complete only when the linked commands and artifacts are
 | CLERK-001 | partial | `test:slice2-clerk-repository` freezes and verifies the strict repository contract: independent Git metadata, exact frontmatter, ordered six-section `CLERK.md`, size limits, approved root layout, indexed material metadata, Skill structure, and symlink/nested-repository refusal | Lifecycle integration remains |
 | CLERK-002 | partial | `test:slice2-clerk-repository` validates an isolated real-Git approved commit snapshot, proves dirty working-tree content cannot participate, and fails closed when the requested historical commit is absent | Lifecycle selection/compile binding and full history-object certification remain |
 | CLERK-005 | partial | `test:slice2-clerk-repository` rejects executable material outside Skills and rejects every Skill auxiliary file not explicitly referenced by its `SKILL.md`, while permitting unindexed raw Sources | Commit approval semantics and capability permission containment remain |
-| S2-001 | partial | `test:slice2-clerk-repository` verifies repository validation against isolated fixtures and real Git, including approved-commit identity, missing history, and dirty-content exclusion | create/register and lifecycle recovery remain |
+| LIFE-003 | partial | `test:slice2-clerk-repository` proves the shared lifecycle mutation lock refuses a live PID, reclaims a dead owner, fails closed on malformed ownership, and ownership-checks release | Binding all eight write commands and kill/restart certification remain |
+| S2-001 | partial | `test:slice2-clerk-repository` verifies repository validation against isolated fixtures and real Git, including approved-commit identity, missing history, dirty-content exclusion, and the shared live-PID lifecycle lock | create/register and lifecycle recovery remain |
 
 ## Slice 2 compact requirement-to-test matrix
 
