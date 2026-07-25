@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/clerkmesh.execution-context.v1.schema.json",
+  "title": "ClerkMesh execution context v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "taskId", "clerk", "identity", "selection", "allowlist"],
+  "properties": {
+    "schema": { "const": "clerkmesh.execution-context.v1" },
+    "taskId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "clerk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "execution", "commit"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "execution": { "enum": ["agent", "human"] },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "workingStyle", "instructions"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1, "maxLength": 32768 },
+        "workingStyle": { "type": "string", "minLength": 1, "maxLength": 32768 },
+        "instructions": { "type": "string", "minLength": 1, "maxLength": 32768 }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "boundaries"],
+      "properties": {
+        "reason": { "type": "string", "minLength": 1, "maxLength": 8192 },
+        "boundaries": { "type": "string", "minLength": 1, "maxLength": 32768 }
+      }
+    },
+    "allowlist": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "name", "description", "blobOid"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^(?:workflows|knowledge|cases)/[a-z0-9]+(?:-[a-z0-9]+)*\\.md$|^skills/[a-z0-9]+(?:-[a-z0-9]+)*/SKILL\\.md$" },
+          "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "blobOid": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+        }
+      }
+    }
+  }
+}
