@@ -23,6 +23,36 @@ function field(body, selector, description) {
  * dedicated workspace. The extraction command is supplied by the application
  * boundary so this module owns runtime topology, not prompt policy.
  */
+export function createHerdrLearningInspector({ execute = execFileAsync } = {}) {
+  if (typeof execute !== "function") throw new Error("invalid Herdr Learning inspector configuration");
+
+  const query = async (endpoint, resource) => {
+    try {
+      const result = await execute("herdr", [resource, "get", endpoint.paneId, "--session", endpoint.session], { encoding: "utf8" });
+      const body = typeof result === "string" ? result : result.stdout;
+      return { value: JSON.parse(body) };
+    } catch (error) {
+      const diagnostic = `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`;
+      if (new RegExp(`${resource}_not_found|pane_not_found`).test(diagnostic)) return { absent: true };
+      throw new Error(`Herdr Learning ${resource} inspection failed`);
+    }
+  };
+
+  return async (endpoint) => {
+    if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && SAFE_ID.test(value))) {
+      throw new Error("invalid Herdr Learning endpoint");
+    }
+    const pane = await query(endpoint, "pane");
+    if (pane.absent) return "interrupted";
+    const agent = await query(endpoint, "agent");
+    if (agent.absent) return "interrupted";
+    const status = agent.value?.result?.agent?.agent_status;
+    if (status === "done") return "complete";
+    if (["working", "idle", "blocked"].includes(status)) return "live";
+    return "failed";
+  };
+}
+
 export function createHerdrLearningLauncher({ session, commandForTarget, execute = execFileAsync }) {
   if (!SAFE_ID.test(session ?? "") || typeof commandForTarget !== "function" || typeof execute !== "function") {
     throw new Error("invalid Herdr Learning launcher configuration");

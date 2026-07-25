@@ -6,7 +6,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
 import { approveLearningTarget, createLearningProposal, prepareLearningTargetReview, reconcileLearningExtraction, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
-import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
+import { createHerdrLearningInspector, createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
 const exec = promisify(execFile);
@@ -83,6 +83,27 @@ try {
       return { stdout: JSON.stringify({ result: {} }) };
     },
   });
+  const inspectionCalls = [];
+  const inspectTarget = createHerdrLearningInspector({
+    execute: async (command, args) => {
+      inspectionCalls.push([command, ...args]);
+      const pane = args[2];
+      if (args[0] === "pane" && pane === "missing") throw Object.assign(new Error("absent"), { stderr: "pane_not_found" });
+      if (args[0] === "agent" && pane === "missing-agent") throw Object.assign(new Error("absent"), { stderr: "agent_not_found" });
+      const status = pane === "finished" ? "done" : pane === "unknown" ? "mystery" : "working";
+      return { stdout: JSON.stringify({ result: { agent: { agent_status: status } } }) };
+    },
+  });
+  const endpoint = (paneId) => ({ backend: "herdr", session: "isolated-learning", workspaceId: "learning-workspace", tabId: "tab-alpha", paneId });
+  assert.equal(await inspectTarget(endpoint("running")), "live");
+  assert.equal(await inspectTarget(endpoint("finished")), "complete");
+  assert.equal(await inspectTarget(endpoint("missing")), "interrupted");
+  assert.equal(await inspectTarget(endpoint("missing-agent")), "interrupted");
+  assert.equal(await inspectTarget(endpoint("unknown")), "failed");
+  assert.ok(inspectionCalls.every((call) => call.slice(-2).join(" ") === "--session isolated-learning"));
+  await assert.rejects(inspectTarget({ ...endpoint("running"), session: "bad session" }), /invalid Herdr Learning endpoint/);
+  await assert.rejects(createHerdrLearningInspector({ execute: async () => { throw new Error("offline"); } })(endpoint("running")), /inspection failed/);
+
   const learningRunsRoot = path.join(fixture, "clerkmesh-state", "learning-runs");
   const extraction = await startLearningExtraction({
     root: proposalRoot,
