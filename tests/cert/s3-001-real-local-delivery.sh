@@ -36,14 +36,22 @@ git -C "$PROJECT" init -q -b main
 git -C "$PROJECT" config user.name 'ClerkMesh Certification'
 git -C "$PROJECT" config user.email 'cert@example.invalid'
 printf '# Local delivery certification\n' > "$PROJECT/README.md"
-git -C "$PROJECT" add README.md
+cat > "$PROJECT/complete-local-delivery.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -eu
+printf 'S3-001 genuine local delivery\n' > result.md
+test "$(cat result.md)" = "S3-001 genuine local delivery"
+git add result.md
+git commit -qm 'Complete genuine local delivery'
+SCRIPT
+chmod +x "$PROJECT/complete-local-delivery.sh"
+git -C "$PROJECT" add README.md complete-local-delivery.sh
 git -C "$PROJECT" commit -qm baseline
 BASE=$(git -C "$PROJECT" rev-parse HEAD)
 cat > "$HOME_ROOT/data/$TASK/brief.md" <<'BRIEF'
 # Task
 
-Create `result.md` containing exactly `S3-001 genuine local delivery` followed by a newline.
-Run `test "$(cat result.md)" = "S3-001 genuine local delivery"`, then commit the change on the current branch. Do not modify any other file.
+Run the Project's `./complete-local-delivery.sh` command exactly once, then verify `git status --porcelain` is empty. Do not modify any other file.
 BRIEF
 
 OUT="$TMP/spawn.out" ERR="$TMP/spawn.err"
