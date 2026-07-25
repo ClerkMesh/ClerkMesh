@@ -58,6 +58,26 @@ DEST="$CLERKMESH_CLERKS/imported-clerk"
 [ "$(git -C "$TMP/source" remote get-url upstream)" = 'https://example.invalid/private.git' ]
 grep -Fq "| imported-clerk | $DEST | active | false |" "$CLERKMESH_DATA/clerks.md"
 [ ! -e "$CLERKMESH_STATE/clerk-lifecycle.lock" ]
+[ ! -e "$CLERKMESH_STATE/clerk-lifecycle-journal.v1.json" ]
+
+# Recover the crash window after repository publication but before registry publication.
+git clone -q --no-hardlinks --no-local "$TMP/source" "$TMP/recovery-source"
+git -C "$TMP/recovery-source" remote remove origin
+perl -0pi -e 's/imported-clerk/recovered-clerk/g' "$TMP/recovery-source/CLERK.md"
+git -C "$TMP/recovery-source" config user.name Test
+git -C "$TMP/recovery-source" config user.email test@example.invalid
+git -C "$TMP/recovery-source" commit -qam 'rename recovered Clerk'
+RECOVERED=$(git -C "$TMP/recovery-source" rev-parse HEAD)
+git clone -q --no-hardlinks --no-local "$TMP/recovery-source" "$CLERKMESH_CLERKS/recovered-clerk"
+git -C "$CLERKMESH_CLERKS/recovered-clerk" remote remove origin
+node --input-type=module - "$ROOT" "$CLERKMESH_STATE" "$CLERKMESH_CLERKS/recovered-clerk" <<'NODE'
+const { createJournalPath, writeRegisterJournal } = await import(`file://${process.argv[2]}/packages/clerk-cli/src/clerk-lifecycle-journal.mjs`);
+await writeRegisterJournal({ journalPath: createJournalPath(process.argv[3]), name: "recovered-clerk", destination: process.argv[4] });
+NODE
+OUT=$("$ROOT/packages/clerk-cli/bin/clerk-register.sh" recovered-clerk "$TMP/does-not-exist")
+[ "$OUT" = "recovered-clerk	$RECOVERED	active" ]
+grep -Fq "| recovered-clerk | $CLERKMESH_CLERKS/recovered-clerk | active | false |" "$CLERKMESH_DATA/clerks.md"
+[ ! -e "$CLERKMESH_STATE/clerk-lifecycle-journal.v1.json" ]
 
 # A reused name fails without changing either source or authoritative registry.
 cp "$CLERKMESH_DATA/clerks.md" "$TMP/before"
@@ -66,4 +86,4 @@ if "$ROOT/packages/clerk-cli/bin/clerk-register.sh" imported-clerk "$TMP/source"
 fi
 [ ! -s "$TMP/out" ]; grep -q 'already used' "$TMP/err"; cmp "$TMP/before" "$CLERKMESH_DATA/clerks.md"
 ! find "$CLERKMESH_CLERKS" -maxdepth 1 -name '.imported-clerk.register.*' | grep -q .
-printf '%s\n' 'ok - Clerk register imports approved history without dirty content or remotes'
+printf '%s\n' 'ok - Clerk register imports approved history and recovers interrupted publication'

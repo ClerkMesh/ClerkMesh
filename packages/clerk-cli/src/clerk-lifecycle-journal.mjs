@@ -10,18 +10,26 @@ export function createJournalPath(stateRoot) {
   return join(resolve(stateRoot), "clerk-lifecycle-journal.v1.json");
 }
 
-export async function writeCreateJournal({ journalPath, name, destination }) {
-  const document = `${JSON.stringify({ version: 1, operation: "create", name, destination })}\n`;
+async function writeLifecycleJournal({ journalPath, operation, name, destination }) {
+  const document = `${JSON.stringify({ version: 1, operation, name, destination })}\n`;
   const temporary = join(dirname(journalPath), `.${process.pid}.${randomUUID()}.journal.tmp`);
   await writeFile(temporary, document, { encoding: "utf8", flag: "wx", mode: 0o600 });
   await rename(temporary, journalPath);
+}
+
+export async function writeCreateJournal(options) {
+  await writeLifecycleJournal({ ...options, operation: "create" });
+}
+
+export async function writeRegisterJournal(options) {
+  await writeLifecycleJournal({ ...options, operation: "register" });
 }
 
 export async function clearLifecycleJournal(journalPath) {
   await rm(journalPath, { force: true });
 }
 
-export async function recoverCreateJournal({ journalPath, registryPath, clerksRoot }) {
+export async function recoverLifecycleJournal({ journalPath, registryPath, clerksRoot }) {
   let raw;
   try { raw = await readFile(journalPath, "utf8"); }
   catch (error) {
@@ -30,7 +38,7 @@ export async function recoverCreateJournal({ journalPath, registryPath, clerksRo
   }
   let journal;
   try { journal = JSON.parse(raw); } catch { throw new Error("lifecycle journal is malformed"); }
-  if (journal?.version !== 1 || journal.operation !== "create" || !NAME_PATTERN.test(journal.name ?? "") || typeof journal.destination !== "string") {
+  if (journal?.version !== 1 || !["create", "register"].includes(journal.operation) || !NAME_PATTERN.test(journal.name ?? "") || typeof journal.destination !== "string") {
     throw new Error("lifecycle journal has unsupported content");
   }
   const root = await realpath(resolve(clerksRoot));
@@ -55,3 +63,6 @@ export async function recoverCreateJournal({ journalPath, registryPath, clerksRo
   await clearLifecycleJournal(journalPath);
   return { name: journal.name, commit: approved.commit };
 }
+
+// Retained for callers created before register shared the transaction journal.
+export const recoverCreateJournal = recoverLifecycleJournal;
