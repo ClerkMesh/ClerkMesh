@@ -4,12 +4,12 @@
 # no-mistakes|direct-PR|local-only and yolo is on|off.
 #
 # Registry line format (data/projects.md):
-#   - <name> - <desc> (added <date>)                  -> no-mistakes off  (legacy default)
+#   - <name> - <desc> (added <date>)                  -> local-only off (safe default)
 #   - <name> [<mode>] - <desc> (added <date>)          -> <mode> off
 #   - <name> [<mode> +yolo] - <desc> (added <date>)    -> <mode> on
 #
 # mode = how a finished change reaches main:
-#   no-mistakes  full pipeline -> PR -> captain merge (default)
+#   no-mistakes  full pipeline -> PR -> captain merge (requires explicit registry mode)
 #   direct-PR    push + PR via gh-axi, no pipeline -> captain merge
 #   local-only   local branch, no remote/PR -> captain approve -> guarded local merge
 # yolo (orthogonal) = when on, firstmate may make routine approval decisions itself.
@@ -37,7 +37,7 @@ fi
 # awk emits "<mode> <yolo>" (one line) or nothing if the project is absent.
 parsed=$(awk -v n="$NAME" '
   $1=="-" && $2==n {
-    mode="no-mistakes"; yolo="off";
+    mode="local-only"; yolo="off";
     if ($3 ~ /^\[/) {
       s="";
       for (i=3; i<=NF; i++) { s = s (s==""?"":" ") $i; if ($i ~ /\]$/) break }

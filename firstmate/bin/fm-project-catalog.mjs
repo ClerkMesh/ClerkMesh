@@ -39,8 +39,8 @@ try {
     if (!match || !validName.test(match[1])) { notice("omitted", "invalid project registry record"); continue; }
     const id = match[1];
     if (records.has(id)) { records.set(id, null); notice("omitted", "duplicate project registry records", id); continue; }
-    const options = (match[2] || "no-mistakes").trim().split(/\s+/);
-    const mode = options.find(value => value !== "+yolo") || "no-mistakes";
+    const options = (match[2] || "local-only").trim().split(/\s+/);
+    const mode = options.find(value => value !== "+yolo") || "local-only";
     records.set(id, { name: id, mode: ["local-only", "direct-PR", "no-mistakes"].includes(mode) ? mode : "unknown", yolo: options.includes("+yolo") });
   }
 } catch {
