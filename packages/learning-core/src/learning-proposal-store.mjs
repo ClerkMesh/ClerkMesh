@@ -75,6 +75,60 @@ export async function validateLearningCandidate({ candidateDirectory, baseCommit
  * Create the authoritative immutable-base manifest and isolated candidate clones
  * for a multi-target Learning Proposal. Extraction is launched separately.
  */
+export async function startLearningExtraction({ root, proposalId, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
+  if (!SHA256.test(proposalId ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
+    throw new Error("invalid Learning extraction launch request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "pending") {
+    throw new Error("Learning Proposal is not pending");
+  }
+  const source = await realpath(sourceDirectory);
+  const sourceManifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
+  if (sourceManifest.id !== manifest.sourceId) throw new Error("Learning Proposal Source does not match");
+
+  const runDirectory = path.join(path.resolve(learningRunsRoot), proposalId);
+  await mkdir(runDirectory, { recursive: true, mode: 0o700 });
+  const endpoints = [];
+  let workspaceId;
+  try {
+    for (const target of manifest.targets) {
+      const endpoint = await launchTarget({
+        proposalId,
+        target: target.name,
+        candidateDirectory: path.join(proposalDirectory, target.candidate),
+        sourceDirectory: source,
+        workspaceId,
+      });
+      if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && value.length > 0)) {
+        throw new Error(`Learning target ${target.name} did not return an authoritative Herdr endpoint`);
+      }
+      if (workspaceId && endpoint.workspaceId !== workspaceId) throw new Error("Learning targets must share one dedicated Herdr workspace");
+      if (endpoints.some((item) => item.tabId === endpoint.tabId || item.paneId === endpoint.paneId)) throw new Error("Learning targets must use independent Herdr tabs and panes");
+      workspaceId = endpoint.workspaceId;
+      const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint };
+      const destination = path.join(runDirectory, `${target.name}.json`);
+      const temporary = `${destination}.${randomUUID()}.tmp`;
+      await writeFile(temporary, `${canonical(record)}\n`, { flag: "wx", mode: 0o600 });
+      await rename(temporary, destination);
+      endpoints.push(record);
+    }
+    manifest.state = "extracting";
+    manifest.startedAt = startedAt;
+    manifest.targets = manifest.targets.map((target) => ({ ...target, state: "extracting" }));
+    const temporaryManifest = `${manifestPath}.${randomUUID()}.tmp`;
+    await writeFile(temporaryManifest, `${canonical(manifest)}\n`, { flag: "wx", mode: 0o600 });
+    await rename(temporaryManifest, manifestPath);
+    return { manifest: structuredClone(manifest), endpoints: structuredClone(endpoints) };
+  } catch (error) {
+    // Persisted endpoint records deliberately survive partial launch so restart
+    // reconciliation can inspect exact processes; never hide them via cleanup.
+    throw error;
+  }
+}
+
 export async function createLearningProposal({ root, sourceDirectory, targets, createdAt }) {
   if (!Array.isArray(targets) || targets.length < 2) throw new Error("Learning Proposal requires at least two targets");
   if (!Number.isFinite(Date.parse(createdAt ?? ""))) throw new Error("createdAt must be an ISO timestamp");

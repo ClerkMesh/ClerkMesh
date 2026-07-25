@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createLearningProposal, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 
 const exec = promisify(execFile);
 const fixture = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-learning-proposal-"));
@@ -65,6 +65,33 @@ try {
 
   const persisted = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
   assert.deepEqual(persisted, proposal);
+
+  const launched = [];
+  const learningRunsRoot = path.join(fixture, "clerkmesh-state", "learning-runs");
+  const extraction = await startLearningExtraction({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    sourceDirectory: path.join(sourceRoot, source.id),
+    learningRunsRoot,
+    startedAt: "2026-03-01T00:03:00.000Z",
+    launchTarget: async (request) => {
+      launched.push(request);
+      return {
+        backend: "herdr",
+        session: "isolated-learning",
+        workspaceId: "learning-workspace",
+        tabId: `tab-${request.target}`,
+        paneId: `pane-${request.target}`,
+      };
+    },
+  });
+  assert.deepEqual(launched.map(({ target, workspaceId }) => [target, workspaceId]), [["alpha", undefined], ["beta", "learning-workspace"]]);
+  assert.equal(extraction.manifest.state, "extracting");
+  assert.deepEqual(extraction.manifest.targets.map(({ state }) => state), ["extracting", "extracting"]);
+  assert.deepEqual(extraction.endpoints.map(({ target, tabId }) => [target, tabId]), [["alpha", "tab-alpha"], ["beta", "tab-beta"]]);
+  assert.deepEqual(JSON.parse(await readFile(path.join(learningRunsRoot, proposal.id, "alpha.json"), "utf8")), extraction.endpoints[0]);
+  assert.deepEqual(JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8")), extraction.manifest);
+  await assert.rejects(startLearningExtraction({ root: proposalRoot, proposalId: proposal.id, sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, startedAt: "2026-03-01T00:04:00.000Z", launchTarget: async () => ({}) }), /not pending/);
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);
