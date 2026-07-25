@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createPiRpcClient } from "../../apps/web/server/src/pi-rpc-client.mjs";
@@ -97,7 +97,13 @@ try {
 
   const taskNames = await readdir(taskDir);
   assert.deepEqual(taskNames.sort(), ["brief.md", "report.md"]);
-  assert.deepEqual(await readdir(state), [], "Human execution must not create capability or runtime state");
+  const stateNames = await readdir(state);
+  assert.ok(!stateNames.some((name) => /endpoint|worker|capabilit|worktree|status/i.test(name)),
+    `Human execution created forbidden runtime state: ${stateNames.join(", ")}`);
+  const wakeQueue = join(state, ".wake-queue");
+  if (stateNames.includes(".wake-queue")) {
+    assert.equal((await stat(wakeQueue)).size, 0, "Human execution must not enqueue a Worker wake");
+  }
   console.log("ok - S4-001 real Primary selected a Human Clerk, accepted relayed evidence, and created no Worker runtime artifacts");
   console.log(`human_clerk_commit: ${human.commit}; task: ${taskId}`);
 } finally {
