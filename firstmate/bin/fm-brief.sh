@@ -70,6 +70,15 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
+
+record_task_created() {
+  if ! "$SCRIPT_DIR/fm-task-activity-append.sh" --task "$ID" --type task-created --summary "Task brief created" >/dev/null; then
+    rm -f "$BRIEF"
+    echo "error: could not record structured Task creation activity" >&2
+    exit 1
+  fi
+}
+
 KIND=ship
 HERDR_LAB=0
 NO_PROJECTS=0
@@ -270,6 +279,7 @@ Before reporting done, read and follow \`$FM_ROOT/.agents/skills/decision-hold-l
 When the report is complete, append \`done: {one-line conclusion}\` to the status file and stop.
 If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.
 EOF
+record_task_created
 echo "scaffolded: $BRIEF (scout; replace {TASK})"
 exit 0
 fi
@@ -387,4 +397,5 @@ Keep it proportionate: skip \`AGENTS.md\` edits for trivial tasks that produced 
 
 $DOD
 EOF
+record_task_created
 echo "scaffolded: $BRIEF (ship, mode=$MODE; replace {TASK})"

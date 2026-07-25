@@ -371,6 +371,8 @@ test_scout_and_secondmate_scaffold() {
   assert_present "$brief" "scout brief was not scaffolded"
   assert_grep "SCOUT task" "$brief" "scout brief must declare itself a scout task"
   assert_grep "report.md" "$brief" "scout brief must point at the report deliverable"
+  assert_grep '"cursor":1,"type":"task-created"' "$BRIEF_HOME/data/brief-scout-q6/activity.jsonl" \
+    "scout Task creation must append structured activity"
 
   FM_SECONDMATE_CHARTER='Supervise the alpha domain.' \
     FM_HOME="$BRIEF_HOME" "$ROOT/bin/fm-brief.sh" brief-sm-q6 --secondmate alpha >/dev/null 2>&1 \
@@ -379,7 +381,9 @@ test_scout_and_secondmate_scaffold() {
   assert_present "$brief" "secondmate charter was not scaffolded"
   assert_grep "persistent second mate" "$brief" \
     "secondmate charter must declare its role"
-  pass "fm-brief: scout and secondmate code paths still scaffold well-formed briefs"
+  [ ! -e "$BRIEF_HOME/data/brief-sm-q6/activity.jsonl" ] \
+    || fail "secondmate charter must not be projected as Task activity"
+  pass "fm-brief: Task creation activity and secondmate boundaries are preserved"
 }
 
 test_script_parses
