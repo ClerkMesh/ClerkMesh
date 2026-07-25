@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/fm-task-graph.v1.schema.json",
+  "title": "Firstmate task graph v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "freshness", "provenance", "tasks", "edges", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "fm-task-graph.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "stale", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority"],
+      "properties": { "authority": { "const": "firstmate" } }
+    },
+    "tasks": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/task" }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 50000,
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "omitted": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "taskId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "projectId", "kind", "backlogState", "phase", "wait", "runtime", "results"],
+      "properties": {
+        "id": { "$ref": "#/$defs/taskId" },
+        "title": { "$ref": "#/$defs/nonempty" },
+        "projectId": { "$ref": "#/$defs/taskId" },
+        "kind": { "$ref": "#/$defs/nonempty" },
+        "backlogState": { "enum": ["queued", "in_flight", "done", "unknown"] },
+        "phase": { "enum": ["planned", "ready", "dispatched", "executing", "validating", "awaiting_decision", "awaiting_dependency", "completed", "failed", "cancelled", "unknown"] },
+        "wait": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/wait" }] },
+        "runtime": { "$ref": "#/$defs/runtime" },
+        "results": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/result" }
+        }
+      }
+    },
+    "wait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "reason", "blockerIds", "since", "actionableBy"],
+      "properties": {
+        "kind": { "enum": ["dependency", "captain_decision", "external", "runtime_blocked", "paused", "unknown"] },
+        "reason": { "$ref": "#/$defs/nonempty" },
+        "blockerIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/taskId" } },
+        "since": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] },
+        "actionableBy": { "enum": ["captain", "primary", "worker", "external", "unknown"] }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "source", "observedAt"],
+      "properties": {
+        "state": { "$ref": "#/$defs/nonempty" },
+        "source": { "$ref": "#/$defs/nonempty" },
+        "observedAt": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "href", "label", "status"],
+      "properties": {
+        "kind": { "enum": ["pr", "report", "commit", "external"] },
+        "href": { "type": "string", "pattern": "^(https?://|/api/artifacts/)", "maxLength": 2048 },
+        "label": { "$ref": "#/$defs/nonempty" },
+        "status": { "$ref": "#/$defs/nonempty" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "from", "to", "resolved"],
+      "properties": {
+        "type": { "const": "blocks" },
+        "from": { "$ref": "#/$defs/taskId" },
+        "to": { "$ref": "#/$defs/taskId" },
+        "resolved": { "type": "boolean" }
+      }
+    },
+    "notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/taskId" },
+        "reason": { "$ref": "#/$defs/nonempty" }
+      }
+    }
+  }
+}
