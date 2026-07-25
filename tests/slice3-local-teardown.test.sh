@@ -11,7 +11,7 @@ STATE="$HOME_ROOT/state"
 SHIMS="$TMP/bin"
 TASK=teardown-local
 WT="$TMP/task-wt"
-mkdir -p "$HOME_ROOT/data" "$HOME_ROOT/projects" "$STATE" "$SHIMS"
+mkdir -p "$HOME_ROOT/data/$TASK" "$HOME_ROOT/projects" "$STATE" "$SHIMS"
 printf '%s\n' '- demo [local-only] - teardown fixture' > "$HOME_ROOT/data/projects.md"
 
 git init -q -b main "$PROJECT"

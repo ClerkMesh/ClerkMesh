@@ -85,4 +85,8 @@ fi
 before=$(git -C "$PROJ" rev-parse --short "$DEFAULT")
 git -C "$PROJ" merge --ff-only "$TARGET" >/dev/null
 after=$(git -C "$PROJ" rev-parse --short "$DEFAULT")
+if ! "$FM_ROOT/bin/fm-task-activity-append.sh" --task "$ID" --type landed --summary "Task candidate landed by fast-forward" >/dev/null; then
+  echo "error: task $ID landed but structured activity recording failed" >&2
+  exit 1
+fi
 echo "merged $BRANCH into local $DEFAULT ($before -> $after) in $PROJ"

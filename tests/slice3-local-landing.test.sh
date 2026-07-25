@@ -27,6 +27,7 @@ make_task() {
     git -C "$PROJECT" worktree add -qb "fm/$id" "$wt" main
   fi
   printf 'project=%s\nworktree=%s\nmode=local-only\nyolo=%s\ntype=ship\n' "$PROJECT" "$wt" "$yolo" > "$STATE/$id.meta"
+  mkdir -p "$HOME_ROOT/data/$id"
   printf '%s\n' "$wt"
 }
 
@@ -57,6 +58,13 @@ grep -F "merged fm/$TASK into local main" <<<"$LAND" >/dev/null
 [ "$(git -C "$PROJECT" rev-parse main)" = "$TIP" ] || { echo 'landing did not advance main to reviewed tip' >&2; exit 1; }
 git -C "$PROJECT" merge-base --is-ancestor "$BASE" main || { echo 'landing was not a fast-forward' >&2; exit 1; }
 [ -z "$(git -C "$PROJECT" status --porcelain)" ] || { echo 'landing left Project dirty' >&2; exit 1; }
+ACTIVITY="$HOME_ROOT/data/$TASK/activity.jsonl"
+[ "$(wc -l < "$ACTIVITY" | tr -d ' ')" = 1 ] || { echo 'landing did not append exactly one activity event' >&2; exit 1; }
+node -e '
+const fs = require("fs");
+const event = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+if (event.cursor !== 1 || event.type !== "landed" || event.summary !== "Task candidate landed by fast-forward" || event.occurredAt !== null || Number.isNaN(Date.parse(event.observedAt))) process.exit(1);
+' "$ACTIVITY" || { echo 'landing activity event was malformed' >&2; exit 1; }
 
 TASK=land-diverged
 WT=$(make_task "$TASK" on)
@@ -74,5 +82,6 @@ if FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$S
 fi
 grep -F 'REFUSED:' "$TMP/diverged.out" >/dev/null
 [ "$(git -C "$PROJECT" rev-parse main)" = "$BEFORE" ] || { echo 'refused landing moved main' >&2; exit 1; }
+[ ! -e "$HOME_ROOT/data/$TASK/activity.jsonl" ] || { echo 'refused landing emitted false activity' >&2; exit 1; }
 
-printf 'ok - local-only review binds the full diff and landing is clean fast-forward-only\n'
+printf 'ok - local-only review binds the full diff and landing is clean fast-forward-only with structured activity\n'
