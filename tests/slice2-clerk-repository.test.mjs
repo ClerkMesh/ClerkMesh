@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateClerkRepository } from "../packages/clerk-cli/src/clerk-repository.mjs";
+import { promisify } from "node:util";
+import { validateApprovedClerkCommit, validateClerkRepository } from "../packages/clerk-cli/src/clerk-repository.mjs";
+
+const execFileAsync = promisify(execFile);
 
 const root = await mkdtemp(join(tmpdir(), "clerkmesh-clerk-contract-"));
 const validBody = `---
@@ -81,6 +85,18 @@ try {
   await writeFile(join(materials, "sources", "raw.bin"), Buffer.from([0, 1, 2]));
   await validateClerkRepository({ repositoryPath: materials, expectedName: "product-alice" });
 
+  const approved = await fixture();
+  await rm(join(approved, ".git"), { recursive: true });
+  await execFileAsync("git", ["init", "-q", approved]);
+  await execFileAsync("git", ["-C", approved, "add", "CLERK.md"]);
+  await execFileAsync("git", ["-C", approved, "-c", "user.name=ClerkMesh Test", "-c", "user.email=test@invalid", "commit", "-q", "-m", "approved"]);
+  const approvedResult = await validateApprovedClerkCommit({ repositoryPath: approved, expectedName: "product-alice" });
+  assert.match(approvedResult.commit, /^[0-9a-f]{40,64}$/);
+  await writeFile(join(approved, "CLERK.md"), validBody.replace("execution: agent", "execution: robot"));
+  assert.equal((await validateApprovedClerkCommit({ repositoryPath: approved, expectedName: "product-alice" })).commit, approvedResult.commit,
+    "dirty working-tree content must not participate in approved validation");
+  await assert.rejects(validateApprovedClerkCommit({ repositoryPath: approved, commit: "deadbeef", expectedName: "product-alice" }), /approved commit is missing/);
+
   const malformedMaterial = await fixture();
   await mkdir(join(malformedMaterial, "workflows"));
   await writeFile(join(malformedMaterial, "workflows", "deploy.md"), "# Missing metadata\n");
@@ -97,7 +113,7 @@ try {
   await writeFile(join(unapprovedScript, "skills", "summarize", "hidden.sh"), "#!/bin/sh\n");
   await rejects(unapprovedScript, /not explicitly referenced/);
 
-  console.log("ok - Slice 2 Clerk repository material and Skill contract is strict and fail-closed");
+  console.log("ok - Slice 2 Clerk repository and approved-commit contract is strict and fail-closed");
 } finally {
   await rm(root, { recursive: true, force: true });
 }

@@ -1,6 +1,11 @@
-import { lstat, readFile, readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { lstat, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
+import { promisify } from "node:util";
 import { parseDocument } from "yaml";
+
+const execFileAsync = promisify(execFile);
 
 const CLERK_MAX_BYTES = 32 * 1024;
 const DESCRIPTION_MAX_BYTES = 1024;
@@ -105,6 +110,38 @@ async function rejectForbiddenObjects(directory, root = true) {
     if (stat.isSymbolicLink()) fail(`symlink is forbidden: ${path}`);
     if (!root && entry.name === ".git") fail(`nested Git repository is forbidden: ${path}`);
     if (entry.isDirectory() && entry.name !== ".git") await rejectForbiddenObjects(path, false);
+  }
+}
+
+export async function validateApprovedClerkCommit({ repositoryPath, commit = "HEAD", expectedName = basename(repositoryPath) }) {
+  const root = resolve(repositoryPath);
+  let oid;
+  try {
+    ({ stdout: oid } = await execFileAsync("git", ["-C", root, "rev-parse", "--verify", `${commit}^{commit}`], { encoding: "utf8" }));
+  } catch {
+    fail(`approved commit is missing: ${commit}`);
+  }
+  oid = oid.trim();
+
+  const { stdout: tree } = await execFileAsync("git", ["-C", root, "ls-tree", "-r", oid], { encoding: "utf8" });
+  if (tree.split("\n").some((line) => line.startsWith("160000 "))) fail("submodule is forbidden in approved commit");
+
+  const temporary = await mkdtemp(join(tmpdir(), "clerkmesh-approved-clerk-"));
+  const snapshot = join(temporary, "snapshot");
+  try {
+    await mkdir(snapshot);
+    const archive = await execFileAsync("git", ["-C", root, "archive", "--format=tar", oid], {
+      encoding: "buffer",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    const archivePath = join(temporary, "snapshot.tar");
+    await writeFile(archivePath, archive.stdout);
+    await execFileAsync("tar", ["-xf", archivePath, "-C", snapshot]);
+    await mkdir(join(snapshot, ".git"));
+    const metadata = await validateClerkRepository({ repositoryPath: snapshot, expectedName });
+    return Object.freeze({ ...metadata, commit: oid });
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
   }
 }
 
