@@ -49,4 +49,11 @@ S3_007_REMOTE_REPOSITORY=git@github.com:ClerkMesh/clerkmesh-cert-fixture.git \
   S3_007_LIVE=1 corepack pnpm run cert:slice3-direct-pr
 ```
 
-Its genuine output and immutable reviewed head are tracked at `evidence/slice-3/artifacts/s3-007-real-direct-pr.txt`. No Slice 3 or CERT-006 completion is claimed until the no-mistakes pipeline is genuinely certified.
+Its genuine output and immutable reviewed head are tracked at `evidence/slice-3/artifacts/s3-007-real-direct-pr.txt`. A guarded no-mistakes runner is now available for the remaining certification:
+
+```sh
+S3_007_REMOTE_REPOSITORY=git@github.com:ClerkMesh/clerkmesh-cert-fixture.git \
+  S3_007_LIVE=1 corepack pnpm run cert:slice3-no-mistakes
+```
+
+It initializes the real gate in a fresh clone, drives the genuine pipeline, requires exactly one branch-specific PR, proves the certified input commit remains in its head, reviews the complete diff, and squash-merges only that isolated PR. It has not yet produced passing evidence. No Slice 3 or CERT-006 completion is claimed until that genuine run passes.
