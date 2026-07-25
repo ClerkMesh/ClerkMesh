@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/fm-herdr-agents.v1.schema.json",
+  "title": "Firstmate Herdr agents v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "freshness", "provenance", "agents", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "fm-herdr-agents.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "stale", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "runtime"],
+      "properties": {
+        "authority": { "const": "firstmate" },
+        "runtime": { "const": "herdr" }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/agentRecord" }
+    },
+    "omitted": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    }
+  },
+  "$defs": {
+    "taskId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "nonempty": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "presence": { "enum": ["yes", "no", "unknown"] },
+    "agentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskId", "backend", "agent", "endpoint"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/taskId" },
+        "backend": { "const": "herdr" },
+        "agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "status", "observedAt", "source"],
+          "properties": {
+            "present": { "$ref": "#/$defs/presence" },
+            "status": { "enum": ["working", "idle", "done", "blocked", "unknown"] },
+            "observedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "source": { "enum": ["herdr.agent.get", "unavailable"] },
+            "reason": { "$ref": "#/$defs/nonempty" }
+          }
+        },
+        "endpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exists"],
+          "properties": { "exists": { "$ref": "#/$defs/presence" } }
+        }
+      }
+    },
+    "notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/taskId" },
+        "reason": { "$ref": "#/$defs/nonempty" }
+      }
+    }
+  }
+}
