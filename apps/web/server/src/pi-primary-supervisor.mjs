@@ -31,6 +31,14 @@ export function createPiPrimarySupervisor({ spawnPrimary, eventProjection, requi
       });
       try {
         await rpc.initialize({ sessionPath: session?.path ?? null, requiredCommand });
+        // Rebuild only durable visible history from Pi after a Web-process
+        // restart. Stream fragments, statuses, and diagnostics are not
+        // persisted by ClerkMesh and therefore are never synthesized here.
+        if (session?.path) {
+          for (const message of await rpc.getMessages()) {
+            projectPiRpcEvent(eventProjection, { type: "message_end", message });
+          }
+        }
       } catch (error) {
         if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
         recordOffline();

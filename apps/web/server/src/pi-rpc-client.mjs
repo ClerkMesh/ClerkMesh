@@ -88,6 +88,13 @@ export function createPiRpcClient({ child, onEvent = () => {}, maxLineBytes = 10
       }
       return { commands };
     },
+    async getMessages() {
+      const data = await command("get_messages");
+      if (!Array.isArray(data?.messages)) {
+        throw new PiRpcError("invalid-history", "Pi RPC returned invalid conversation history.");
+      }
+      return data.messages;
+    },
     prompt(message) {
       if (typeof message !== "string" || message.length === 0) throw new TypeError("message is required");
       return command("prompt", { message });

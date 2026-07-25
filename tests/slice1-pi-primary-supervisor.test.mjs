@@ -20,7 +20,13 @@ function fakeChild() {
     const command = JSON.parse(bytes.toString());
     const data = command.type === "get_commands"
       ? { commands: [{ name: "clerkmesh-status", source: "extension" }] }
-      : { accepted: true };
+      : command.type === "get_messages"
+        ? { messages: [
+            { role: "user", content: "Persisted Captain message", timestamp: 1 },
+            { role: "assistant", content: [{ type: "thinking", thinking: "private" }, { type: "text", text: "Persisted reply" }], timestamp: 2 },
+            { role: "toolResult", content: [{ type: "text", text: "not visible" }] },
+          ] }
+        : { accepted: true };
     queueMicrotask(() => child.stdout.write(`${JSON.stringify({ type: "response", id: command.id, command: command.type, success: true, data })}\n`));
   });
   return child;
@@ -48,6 +54,14 @@ const [primaryA, primaryB] = await Promise.all([
 assert.equal(primaryA, primaryB);
 assert.equal(spawns, 1, "concurrent startup must own one child");
 assert.deepEqual(supervisor.state(), { started: true, offline: false, pid: 4242 });
+assert.deepEqual(
+  projection.snapshot({ diagnostics: false }).events.map(({ kind, payload }) => ({ kind, payload })),
+  [
+    { kind: "visible-message", payload: { role: "user", content: "Persisted Captain message" } },
+    { kind: "visible-message", payload: { role: "assistant", content: "Persisted reply" } },
+  ],
+  "startup must rebuild only durable visible messages from Pi history",
+);
 assert.deepEqual(await supervisor.sendPrompt(primaryA, "Captain message"), { accepted: true });
 
 children[0].stdout.write(`${JSON.stringify({ type: "agent_settled" })}\n`);

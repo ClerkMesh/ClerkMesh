@@ -23,7 +23,9 @@ function fakeChild() {
       const command = JSON.parse(line);
       const data = command.type === "get_commands"
         ? { commands: [{ name: "clerkmesh-status", source: "extension" }] }
-        : command.type === "prompt" ? { accepted: true } : {};
+        : command.type === "get_messages"
+          ? { messages: [] }
+          : command.type === "prompt" ? { accepted: true } : {};
       queueMicrotask(() => child.stdout.write(`${JSON.stringify({
         type: "response", id: command.id, command: command.type, success: true, data,
       })}\n`));
