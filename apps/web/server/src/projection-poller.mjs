@@ -2,16 +2,20 @@ import { createHash } from "node:crypto";
 
 const DEFAULT_INTERVAL_MS = 2_000;
 
-function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+function canonicalProjectionContent(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalProjectionContent).join(",")}]`;
   if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+    // Projection observation timestamps change on every genuine query. They
+    // describe when facts were sampled, not a change to those facts, and must
+    // not turn every two-second poll into a client update.
+    return `{${Object.keys(value).filter((key) => key !== "observedAt").sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalProjectionContent(value[key])}`).join(",")}}`;
   }
   return JSON.stringify(value);
 }
 
 function snapshotHash(snapshot) {
-  return createHash("sha256").update(canonicalJson(snapshot), "utf8").digest("hex");
+  return createHash("sha256").update(canonicalProjectionContent(snapshot), "utf8").digest("hex");
 }
 
 export class ProjectionPoller {

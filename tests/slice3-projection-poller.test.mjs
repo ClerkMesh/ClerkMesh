@@ -39,6 +39,14 @@ await interval.callback();
 await poller.pollOnce();
 assert.equal(events.length, 1, "byte-equivalent projection must not publish again");
 
+snapshot = {
+  schema: "fm-task-graph.v1",
+  observedAt: "2026-01-01T00:00:03.000Z",
+  tasks: [{ id: "TASK-1", observedAt: "2026-01-01T00:00:03.000Z" }],
+};
+await poller.pollOnce();
+assert.equal(events.length, 1, "fresh observation timestamps alone must not publish again");
+
 snapshot = { tasks: [{ id: "TASK-1" }], schema: "fm-task-graph.v1" };
 await poller.pollOnce();
 assert.equal(events.length, 1, "object key order must not change the content hash");
