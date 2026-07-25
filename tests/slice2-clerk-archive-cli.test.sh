@@ -28,6 +28,17 @@ OUT=$("$ROOT/packages/clerk-cli/bin/clerk-archive.sh" review-clerk)
 [ "$OUT" = "review-clerk	archived" ]
 cmp "$TMP/before" "$CLERKMESH_DATA/clerks.md"
 
+# Restart recovery completes an archive whose intent was durable before registry publication.
+perl -0pi -e 's/\| review-clerk \|([^\n]+)\| archived \| false \|/| review-clerk |$1| active | false |/' "$CLERKMESH_DATA/clerks.md"
+node --input-type=module - "$ROOT" "$CLERKMESH_STATE" <<'NODE'
+const { createJournalPath, writeArchiveJournal } = await import(`file://${process.argv[2]}/packages/clerk-cli/src/clerk-lifecycle-journal.mjs`);
+await writeArchiveJournal({ journalPath: createJournalPath(process.argv[3]), name: "review-clerk" });
+NODE
+OUT=$($ROOT/packages/clerk-cli/bin/clerk-archive.sh review-clerk)
+[ "$OUT" = "$(printf 'review-clerk\tarchived')" ]
+grep -Fq "| review-clerk | $CLERKMESH_CLERKS/review-clerk | archived | false |" "$CLERKMESH_DATA/clerks.md"
+[ ! -e "$CLERKMESH_STATE/clerk-lifecycle-journal.v1.json" ]
+
 if "$ROOT/packages/clerk-cli/bin/clerk-archive.sh" escalation >"$TMP/out" 2>"$TMP/err"; then
   echo "Escalation Clerk unexpectedly archived" >&2; exit 1
 fi
