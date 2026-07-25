@@ -17,4 +17,6 @@ For an Agent Clerk, before compiling or spawning Project work, run `$CLERKMESH_R
 
 For a Human Clerk, do not spawn a Worker and do not create an endpoint, capability, or synthetic Agent status. Record Captain-relayed progress and the final Markdown result through the current conversation and Firstmate report. If the result requires Project, Git, or tool changes, create a dependent Agent Task and select an Agent Clerk again before execution.
 
+Treat `yolo` only as bounded delivery automation, never as Captain authorization for a destructive, security-sensitive, irreversible, or out-of-request decision. Escalate every such decision in the current conversation and wait for explicit Captain confirmation. Landing must still use Firstmate's authoritative review and mode-specific fail-closed delivery command; never bypass its cleanliness, exact-tip, or fast-forward safeguards.
+
 Never select a Clerk, write a brief, intercept a spawn, or maintain assignment state inside this extension. Those actions belong to the Primary's explicit control-plane calls and Firstmate's existing authority.

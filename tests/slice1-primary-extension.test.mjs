@@ -51,6 +51,9 @@ for (const rule of [
   /wait for a response before execution/,
   /ordinary Firstmate Worker lifecycle/,
   /Human Clerk, do not spawn a Worker/,
+  /Treat `yolo` only as bounded delivery automation, never as Captain authorization/,
+  /destructive, security-sensitive, irreversible, or out-of-request decision.*wait for explicit Captain confirmation/s,
+  /authoritative review and mode-specific fail-closed delivery command.*never bypass its cleanliness, exact-tip, or fast-forward safeguards/s,
   /Never select a Clerk, write a brief, intercept a spawn, or maintain assignment state inside this extension/,
 ]) assert.match(source, rule);
 
