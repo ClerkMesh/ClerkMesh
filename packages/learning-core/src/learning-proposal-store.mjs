@@ -111,6 +111,18 @@ export async function prepareLearningTargetReview({ root, proposalId, targetName
   const targetIndex = manifest.targets.findIndex(({ name }) => name === targetName);
   if (targetIndex < 0 || !["extracting", "review-ready"].includes(manifest.targets[targetIndex].state)) throw new Error("Learning target cannot be reviewed");
   const target = manifest.targets[targetIndex];
+  const canonicalRepository = await realpath(target.repository);
+  const currentHead = await git(canonicalRepository, "rev-parse", "HEAD");
+  if (currentHead !== target.baseCommit) {
+    manifest.targets[targetIndex] = {
+      ...target,
+      state: "stale",
+      review: null,
+      stale: { detectedAt: preparedAt, expectedBaseCommit: target.baseCommit, currentHead },
+    };
+    await publishManifest(manifestPath, manifest);
+    throw new Error(`Learning target ${targetName} is stale because canonical HEAD changed`);
+  }
   const source = await realpath(sourceDirectory);
   const sourceManifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
   const sourceBytes = await readFile(path.join(source, "source.md"));
@@ -237,7 +249,7 @@ export async function createLearningProposal({ root, sourceDirectory, targets, c
       // A real clone (not a worktree) prevents candidate writes from touching canonical Git metadata.
       await execFileAsync("git", ["clone", "--quiet", "--no-hardlinks", "--no-checkout", target.repository, candidate]);
       await git(candidate, "checkout", "--quiet", "--detach", target.baseCommit);
-      manifestTargets.push({ name: target.name, baseCommit: target.baseCommit, candidate: candidateRelative, state: "pending" });
+      manifestTargets.push({ name: target.name, repository: target.repository, baseCommit: target.baseCommit, candidate: candidateRelative, state: "pending" });
     }
     const manifest = { schema: "clerkmesh.learning-proposal.v1", id, sourceId: sourceManifest.id, createdAt, state: "pending", targets: manifestTargets };
     await writeFile(path.join(temporary, "manifest.json"), `${canonical(manifest)}\n`, { flag: "wx", mode: 0o600 });

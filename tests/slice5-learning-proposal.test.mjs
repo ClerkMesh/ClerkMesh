@@ -144,6 +144,27 @@ try {
   assert.deepEqual(reviewedManifest.targets[0].review, revisedReview);
   assert.equal(reviewedManifest.targets[1].state, "extracting");
 
+  await writeFile(path.join(alpha, "CLERK.md"), "# alpha advanced\n");
+  await exec("git", ["-C", alpha, "add", "CLERK.md"]);
+  await exec("git", ["-C", alpha, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "canonical advance"]);
+  const advancedHead = (await exec("git", ["-C", alpha, "rev-parse", "HEAD"])).stdout.trim();
+  await assert.rejects(prepareLearningTargetReview({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "alpha",
+    sourceDirectory: path.join(sourceRoot, source.id),
+    preparedAt: "2026-03-01T00:07:00.000Z",
+  }), /stale because canonical HEAD changed/);
+  const staleManifest = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
+  assert.equal(staleManifest.targets[0].state, "stale");
+  assert.equal(staleManifest.targets[0].review, null);
+  assert.deepEqual(staleManifest.targets[0].stale, {
+    detectedAt: "2026-03-01T00:07:00.000Z",
+    expectedBaseCommit: proposal.targets[0].baseCommit,
+    currentHead: advancedHead,
+  });
+  assert.equal(staleManifest.targets[1].state, "extracting");
+
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);
   console.log("ok - multi-target Learning Proposal fixes isolated candidate clones to independent base commits");
