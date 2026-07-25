@@ -347,9 +347,15 @@ test_pi_threads_model_and_max_effort() {
     "pi launch did not thread the requested model and max thinking level"
   assert_not_contains "$launch" "FM_FIRSTMATE_PI_LAUNCH_BRIEF=" \
     "pi launch still exports the removed Calm input-reroute binding"
+  assert_contains "$launch" "-e '$HOME_DIR/state/$id.pi-ext.ts'" \
+    "Pi Worker launch did not load only its task-scoped turn-end extension"
+  assert_not_contains "$launch" "packages/pi-primary-extension" \
+    "Pi Worker launch must not load the ClerkMesh Primary Extension"
+  assert_not_contains "$launch" "clerkmesh-status" \
+    "Pi Worker launch must not receive Primary-only ClerkMesh capability"
   assert_contains "$launch" "fm-operational-input.sh' encode launch-brief" \
     "pi launch lost the canonical typed launch-brief envelope"
-  pass "pi receives --model and --thinking max profile flags"
+  pass "pi receives its profile and task extension without the Primary Extension"
 }
 
 test_quota_selected_default_array_reaches_spawn() {
