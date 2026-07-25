@@ -1,0 +1,23 @@
+S3-007 / CERT-006 genuine no-mistakes certification
+run_at_utc=2026-07-25T12:52:48Z
+repository=ClerkMesh/clerkmesh-cert-fixture
+visibility=PRIVATE
+default_branch=main
+gh=2.96.0
+gh-axi=0.1.28
+no-mistakes=v1.41.2 (867d64d)
+git=2.54.0
+pipeline_run=01KYCNC5B1F0ZFHV8HBT6KS6DV
+pipeline_outcome=checks-passed
+branch=clerkmesh-cert/no-mistakes-20260725T125248Z-2310
+pr=https://github.com/ClerkMesh/clerkmesh-cert-fixture/pull/2
+reviewed_head=2813bc1e399afa7ac7595f521410e3ec4ce25664
+merge_commit=51aa5ac3ba39a3ce04eef4653250930d599a3178
+merged_at=2026-07-25T12:56:09Z
+verified_input_commit_ancestry=true
+verified_complete_diff_path=no-mistakes-certification.txt
+review_recorded=true
+state=MERGED
+ok=no-mistakes-pipeline-pr
+ok=no-mistakes-full-diff-reviewed
+ok=no-mistakes-squash-merged
