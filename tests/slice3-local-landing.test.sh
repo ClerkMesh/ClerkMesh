@@ -59,12 +59,14 @@ grep -F "merged fm/$TASK into local main" <<<"$LAND" >/dev/null
 git -C "$PROJECT" merge-base --is-ancestor "$BASE" main || { echo 'landing was not a fast-forward' >&2; exit 1; }
 [ -z "$(git -C "$PROJECT" status --porcelain)" ] || { echo 'landing left Project dirty' >&2; exit 1; }
 ACTIVITY="$HOME_ROOT/data/$TASK/activity.jsonl"
-[ "$(wc -l < "$ACTIVITY" | tr -d ' ')" = 1 ] || { echo 'landing did not append exactly one activity event' >&2; exit 1; }
+[ "$(wc -l < "$ACTIVITY" | tr -d ' ')" = 2 ] || { echo 'review and landing did not append exactly two activity events' >&2; exit 1; }
 node -e '
 const fs = require("fs");
-const event = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-if (event.cursor !== 1 || event.type !== "landed" || event.summary !== "Task candidate landed by fast-forward" || event.occurredAt !== null || Number.isNaN(Date.parse(event.observedAt))) process.exit(1);
-' "$ACTIVITY" || { echo 'landing activity event was malformed' >&2; exit 1; }
+const events = fs.readFileSync(process.argv[1], "utf8").trim().split("\n").map(JSON.parse);
+if (events[0].cursor !== 1 || events[0].type !== "delivery-reviewed" || events[0].summary !== "Authoritative Task delivery diff reviewed") process.exit(1);
+if (events[1].cursor !== 2 || events[1].type !== "landed" || events[1].summary !== "Task candidate landed by fast-forward") process.exit(1);
+if (events.some((event) => event.occurredAt !== null || Number.isNaN(Date.parse(event.observedAt)))) process.exit(1);
+' "$ACTIVITY" || { echo 'review or landing activity event was malformed' >&2; exit 1; }
 
 TASK=land-diverged
 WT=$(make_task "$TASK" on)

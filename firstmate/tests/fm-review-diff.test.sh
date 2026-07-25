@@ -23,7 +23,7 @@ TMP_ROOT=$(fm_test_tmproot fm-review-diff-tests)
 make_case() {
   local name=$1 case_dir
   case_dir="$TMP_ROOT/$name"
-  mkdir -p "$case_dir/state"
+  mkdir -p "$case_dir/state" "$case_dir/data/task-x1"
 
   git init -q --bare "$case_dir/origin.git"
   git -C "$case_dir/origin.git" symbolic-ref HEAD refs/heads/main
@@ -71,6 +71,7 @@ run_review_diff() {
   local case_dir=$1
   shift
   FM_ROOT_OVERRIDE="$ROOT" \
+  FM_HOME="$case_dir" \
   FM_STATE_OVERRIDE="$case_dir/state" \
     "$REVIEW_DIFF" "$@"
 }

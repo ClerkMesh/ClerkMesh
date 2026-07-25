@@ -158,11 +158,15 @@ git -C "$WT" rev-parse --verify --quiet "$COMPARE_REF^{commit}" >/dev/null || { 
 echo "diff base: $BASE"
 if git -C "$WT" diff --quiet "$BASE...$COMPARE_REF" --; then
   echo "no changes vs $BASE"
-  exit 0
+else
+  git -C "$WT" diff --stat "$BASE...$COMPARE_REF" --
+  if ! "$STAT_ONLY"; then
+    echo
+    git -C "$WT" diff "$BASE...$COMPARE_REF" --
+  fi
 fi
 
-git -C "$WT" diff --stat "$BASE...$COMPARE_REF" --
-if ! "$STAT_ONLY"; then
-  echo
-  git -C "$WT" diff "$BASE...$COMPARE_REF" --
+if ! "$FM_ROOT/bin/fm-task-activity-append.sh" --task "$ID" --type delivery-reviewed --summary "Authoritative Task delivery diff reviewed" >/dev/null; then
+  echo "error: delivery review succeeded but structured Task activity could not be recorded" >&2
+  exit 1
 fi
