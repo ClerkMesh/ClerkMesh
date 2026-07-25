@@ -9,7 +9,7 @@
 # auto-approves), and only as a clean fast-forward - it refuses a diverged branch
 # and tells you to have the crewmate rebase. See AGENTS.md prime directives,
 # project management, and task lifecycle.
-# Usage: fm-merge-local.sh <task-id>
+# Usage: fm-merge-local.sh <task-id> [--captain-approved]
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,13 +17,27 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 "$FM_ROOT/bin/fm-guard.sh" || true
-ID=${1:?usage: fm-merge-local.sh <task-id>}
+ID=${1:?usage: fm-merge-local.sh <task-id> [--captain-approved]}
+APPROVED=false
+case "${2:-}" in
+  '') ;;
+  --captain-approved) APPROVED=true ;;
+  *) echo "usage: fm-merge-local.sh <task-id> [--captain-approved]" >&2; exit 1 ;;
+esac
+[ $# -le 2 ] || { echo "usage: fm-merge-local.sh <task-id> [--captain-approved]" >&2; exit 1; }
 META="$STATE/$ID.meta"
 [ -f "$META" ] || { echo "error: no meta for task $ID at $META" >&2; exit 1; }
 
 PROJ=$(grep '^project=' "$META" | cut -d= -f2-)
 MODE=$(grep '^mode=' "$META" | cut -d= -f2- || true)
+YOLO=$(grep '^yolo=' "$META" | tail -1 | cut -d= -f2- || true)
+[ -n "$YOLO" ] || YOLO=off
 [ "$MODE" = local-only ] || { echo "error: task $ID is mode=$MODE, not local-only; merge PR tasks with bin/fm-pr-merge.sh <id> <PR url> after approval" >&2; exit 1; }
+case "$YOLO" in on|off) ;; *) echo "error: task $ID has invalid yolo=$YOLO" >&2; exit 1 ;; esac
+if [ "$YOLO" = off ] && ! "$APPROVED"; then
+  echo "REFUSED: task $ID has yolo=off; explicit Captain approval is required (--captain-approved)" >&2
+  exit 1
+fi
 
 default_branch() {
   local ref branch

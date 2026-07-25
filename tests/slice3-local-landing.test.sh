@@ -20,9 +20,9 @@ git -C "$PROJECT" commit -qm baseline
 BASE=$(git -C "$PROJECT" rev-parse HEAD)
 
 make_task() {
-  local id=$1 wt="$TMP/$1-wt"
+  local id=$1 yolo=${2:-off} wt="$TMP/$1-wt"
   git -C "$PROJECT" worktree add -qb "fm/$id" "$wt" main
-  printf 'project=%s\nworktree=%s\nmode=local-only\ntype=ship\n' "$PROJECT" "$wt" > "$STATE/$id.meta"
+  printf 'project=%s\nworktree=%s\nmode=local-only\nyolo=%s\ntype=ship\n' "$PROJECT" "$wt" "$yolo" > "$STATE/$id.meta"
   printf '%s\n' "$wt"
 }
 
@@ -39,15 +39,23 @@ grep -F 'diff base: main' <<<"$REVIEW" >/dev/null
 grep -F 'result.txt' <<<"$REVIEW" >/dev/null
 grep -F '+accepted result' <<<"$REVIEW" >/dev/null
 
+if FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
+  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" >"$TMP/unapproved.out" 2>&1; then
+  echo 'yolo=off landing unexpectedly succeeded without Captain approval' >&2
+  exit 1
+fi
+grep -F 'explicit Captain approval is required' "$TMP/unapproved.out" >/dev/null
+[ "$(git -C "$PROJECT" rev-parse main)" = "$BASE" ] || { echo 'unapproved landing moved main' >&2; exit 1; }
+
 LAND=$(FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
-  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK")
+  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" --captain-approved)
 grep -F "merged fm/$TASK into local main" <<<"$LAND" >/dev/null
 [ "$(git -C "$PROJECT" rev-parse main)" = "$TIP" ] || { echo 'landing did not advance main to reviewed tip' >&2; exit 1; }
 git -C "$PROJECT" merge-base --is-ancestor "$BASE" main || { echo 'landing was not a fast-forward' >&2; exit 1; }
 [ -z "$(git -C "$PROJECT" status --porcelain)" ] || { echo 'landing left Project dirty' >&2; exit 1; }
 
 TASK=land-diverged
-WT=$(make_task "$TASK")
+WT=$(make_task "$TASK" on)
 printf 'worker\n' > "$WT/worker.txt"
 git -C "$WT" add worker.txt
 git -C "$WT" commit -qm worker

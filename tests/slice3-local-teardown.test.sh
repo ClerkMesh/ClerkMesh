@@ -51,7 +51,7 @@ grep -F 'REFUSED: local-only worktree' "$TMP/refused.out" >/dev/null
 [ ! -e "$TREEHOUSE_LOG" ] || { echo 'refused teardown called Treehouse' >&2; exit 1; }
 
 FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
-  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" >/dev/null
+  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" --captain-approved >/dev/null
 PATH="$SHIMS:$PATH" FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
   "$ROOT/firstmate/bin/fm-teardown.sh" "$TASK" >"$TMP/teardown.out"
 
