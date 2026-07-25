@@ -10,6 +10,7 @@ import { createConversationWriteCoordinator } from "./conversation-write-coordin
 import { createConversationWriteLease } from "./conversation-write-lease.mjs";
 import { createPiPrimarySupervisor } from "./pi-primary-supervisor.mjs";
 import { createPiSessionDiscovery } from "./pi-session-discovery.mjs";
+import { createWorkProjectionPollers } from "./work-projection-pollers.mjs";
 
 /**
  * Compose the process-local Slice 1 authorities. Keeping this wiring in one
@@ -33,6 +34,7 @@ export function createConversationApplication({
     spawnPrimary: launchPrimary,
   });
   const writeLease = createConversationWriteLease();
+  const workProjectionPollers = createWorkProjectionPollers({ firstmateRoot: root });
 
   async function catalog() {
     return buildConversationSessionCatalog({ firstmateRoot: root, listSessions });
@@ -64,7 +66,10 @@ export function createConversationApplication({
 
   // Fastify close is the foreground Web process ownership boundary. It stops
   // only the Pi child created by this supervisor; Workers remain Firstmate-owned.
-  app.addHook("onClose", async () => supervisor.stop());
+  app.addHook("onClose", async () => {
+    workProjectionPollers.stop();
+    await supervisor.stop();
+  });
 
-  return Object.freeze({ app, eventProjection, supervisor, writeLease });
+  return Object.freeze({ app, eventProjection, supervisor, writeLease, workProjectionPollers });
 }
