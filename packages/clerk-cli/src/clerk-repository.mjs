@@ -49,7 +49,13 @@ function parseClerkDocument(source) {
   if (headings.length !== SECTIONS.length || headings.some((heading, index) => heading !== SECTIONS[index])) {
     fail(`CLERK.md must contain exactly these ordered sections: ${SECTIONS.join(", ")}`);
   }
-  return frontmatter;
+  const sections = Object.fromEntries(SECTIONS.map((heading, index) => {
+    const start = `# ${heading}\n`;
+    const from = match[2].indexOf(start) + start.length;
+    const next = index + 1 < SECTIONS.length ? match[2].indexOf(`\n# ${SECTIONS[index + 1]}\n`, from) : match[2].length;
+    return [heading, match[2].slice(from, next).trim()];
+  }));
+  return { frontmatter, sections };
 }
 
 async function validateMaterialDirectory(root, directoryName) {
@@ -113,6 +119,16 @@ async function rejectForbiddenObjects(directory, root = true) {
   }
 }
 
+export async function inspectApprovedClerkCommit({ repositoryPath, commit = "HEAD", expectedName = basename(repositoryPath) }) {
+  const metadata = await validateApprovedClerkCommit({ repositoryPath, commit, expectedName });
+  const { stdout } = await execFileAsync("git", ["-C", resolve(repositoryPath), "show", `${metadata.commit}:CLERK.md`], {
+    encoding: "utf8",
+    maxBuffer: CLERK_MAX_BYTES + 1,
+  });
+  const { sections } = parseClerkDocument(stdout);
+  return Object.freeze({ ...metadata, sections: Object.freeze(sections) });
+}
+
 export async function validateApprovedClerkCommit({ repositoryPath, commit = "HEAD", expectedName = basename(repositoryPath) }) {
   const root = resolve(repositoryPath);
   let oid;
@@ -169,7 +185,7 @@ export async function validateClerkRepository({ repositoryPath, expectedName = b
     fail("CLERK.md is required and must be readable UTF-8 text");
   }
   if (Buffer.byteLength(source) > CLERK_MAX_BYTES) fail("CLERK.md exceeds 32 KiB");
-  const metadata = parseClerkDocument(source);
+  const { frontmatter: metadata } = parseClerkDocument(source);
   if (metadata.name !== expectedName || !NAME_PATTERN.test(metadata.name)) fail("frontmatter name must equal the directory name");
   if (typeof metadata.description !== "string" || metadata.description.trim() === "") fail("description must be non-empty text");
   if (Buffer.byteLength(metadata.description.trim()) > DESCRIPTION_MAX_BYTES) fail("description exceeds 1024 UTF-8 bytes");
