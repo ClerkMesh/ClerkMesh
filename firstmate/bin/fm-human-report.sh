@@ -73,6 +73,11 @@ node -e '
   printf '\n## Acceptance Evaluation\n\n- Outcome: `%s`\n- Evaluation: %s\n' "$OUTCOME" "$EVALUATION"
 } > "$out"
 chmod 0644 "$out"
+if [ "$OUTCOME" = accepted ]; then
+  source_capture="$SCRIPT_DIR/../../packages/learning-core/src/accepted-human-source-cli.mjs"
+  [ -f "$source_capture" ] && node "$source_capture" "$out" "$TASK" >/dev/null \
+    || { echo "fm-human-report: accepted result could not create Learning Source" >&2; exit 1; }
+fi
 mv -f -- "$out" "$report"
 trap - EXIT HUP INT TERM
 rm -f -- "$body"

@@ -13,6 +13,7 @@ const command = new URL("../firstmate/bin/fm-human-report.sh", import.meta.url).
 
 try {
   await mkdir(taskDir, { recursive: true });
+  await mkdir(join(root, "state"));
   const context = {
     schema: "clerkmesh.execution-context.v1",
     taskId,
@@ -35,7 +36,7 @@ try {
   assert.equal(before.execution_clerk.relationship, "current-or-most-recent-execution");
 
   const result = spawnSync(command, ["--task", taskId, "--outcome", "accepted", "--evaluation", "Documentary evidence satisfies the criterion."], {
-    env: { ...process.env, FM_HOME: root }, input: "## Evidence\n\nCaptain relayed the verified result.\n", encoding: "utf8",
+    env: { ...process.env, FM_HOME: root, CLERKMESH_STATE: join(root, "state") }, input: "## Evidence\n\nCaptain relayed the verified result.\n", encoding: "utf8",
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, `human-report\t${taskId}\taccepted\n`);

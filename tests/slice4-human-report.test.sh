@@ -7,6 +7,8 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/home/data/human-task"
 HOME_ROOT=$(cd "$TMP/home" && pwd -P)
+STATE_ROOT="$TMP/state"
+mkdir -p "$STATE_ROOT"
 ROOT="$ROOT" BRIEF="$HOME_ROOT/data/human-task/brief.md" node --input-type=module <<'NODE'
 import { writeFile } from "node:fs/promises";
 const { encodeExecutionContext } = await import(`${process.env.ROOT}/packages/clerk-cli/src/execution-context-encoding.mjs`);
@@ -21,10 +23,15 @@ const block = `<!-- clerkmesh:execution-context:v1 -->\nschema: clerkmesh.execut
 await writeFile(process.env.BRIEF, `# Brief\n\nAcceptance: documented result.\n\n${block}\n`);
 NODE
 
-out=$(printf 'The Captain relayed the completed analysis.\n' | FM_HOME="$HOME_ROOT" "$CMD" \
+out=$(printf 'The Captain relayed the completed analysis.\n' | FM_HOME="$HOME_ROOT" CLERKMESH_STATE="$STATE_ROOT" "$CMD" \
   --task human-task --outcome accepted --evaluation 'The documented result satisfies the acceptance criterion.')
 [ "$out" = $'human-report\thuman-task\taccepted' ]
 report="$HOME_ROOT/data/human-task/report.md"
+source_manifest=$(find "$STATE_ROOT/learning-sources" -mindepth 2 -maxdepth 2 -name manifest.json -print -quit)
+[ -n "$source_manifest" ]
+node -e 'const fs=require("node:fs"); const m=JSON.parse(fs.readFileSync(process.argv[1])); if(m.provenance.origin!=="accepted_human_task" || m.provenance.humanTask.taskId!=="human-task" || m.provenance.humanTask.outcome!=="accepted") process.exit(1)' "$source_manifest"
+source_dir=${source_manifest%/manifest.json}
+cmp -s "$source_dir/source.md" "$report"
 grep -Fq '<!-- clerkmesh-provenance: {"actor":{"type":"captain","id":"local"}} -->' "$report"
 grep -Fq 'The Captain relayed the completed analysis.' "$report"
 grep -Fq -- '- Outcome: `accepted`' "$report"
