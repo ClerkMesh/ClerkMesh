@@ -59,7 +59,8 @@ DEADLINE=$((SECONDS + 240))
 while [ ! -f "$HOME_ROOT/state/$TASK.turn-ended" ] && [ "$SECONDS" -lt "$DEADLINE" ]; do sleep 2; done
 [ -f "$HOME_ROOT/state/$TASK.turn-ended" ] || fail "Pi Worker did not reach turn end within 240 seconds"
 [ "$(cat "$WT/result.md" 2>/dev/null)" = 'S3-001 genuine local delivery' ] || fail "Worker result failed acceptance validation"
-[ -z "$(git -C "$WT" status --porcelain)" ] || fail "Worker worktree is not clean"
+WORKTREE_STATUS=$(git -C "$WT" status --porcelain=v1 --untracked-files=all)
+[ -z "$WORKTREE_STATUS" ] || fail "Worker worktree is not clean: $(printf '%s' "$WORKTREE_STATUS" | tr '\n' ';')"
 TIP=$(git -C "$WT" rev-parse HEAD)
 [ "$TIP" != "$BASE" ] || fail "Worker did not commit its result"
 DIFF=$(FM_HOME="$HOME_ROOT" FM_ROOT_OVERRIDE="$FM_ROOT" "$FM_ROOT/bin/fm-review-diff.sh" "$TASK")
