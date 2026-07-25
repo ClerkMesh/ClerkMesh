@@ -1,0 +1,14 @@
+S3-007 / CERT-006 genuine remote foundation
+observed_at_utc	2026-07-25T12:45:29Z
+repository	ClerkMesh/clerkmesh-cert-fixture
+visibility	PRIVATE
+default_branch_after_run	main
+gh	2.96.0
+gh-axi	0.1.28
+no-mistakes	v1.41.2
+command	S3_007_LIVE=1 S3_007_REMOTE_REPOSITORY=git@github.com:ClerkMesh/clerkmesh-cert-fixture.git corepack pnpm run cert:slice3-remote-modes
+ok	private-empty-fixture-baselined
+ok	direct-PR-real-preflight
+ok	no-mistakes-real-init-and-preflight
+partial	remote PR creation, review, merge, and no-mistakes pipeline behavior remain uncertified
+validation	corepack pnpm run test:slice3-project-catalog passed
