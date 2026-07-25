@@ -33,7 +33,9 @@ async function publishManifest(manifestPath, manifest) {
 }
 
 async function candidateTree(candidate, baseCommit) {
-  const index = path.join(candidate, `.learning-review-index-${randomUUID()}`);
+  // Keep the temporary index outside the candidate worktree so `git add -A`
+  // cannot accidentally include the index itself in the reviewed tree.
+  const index = path.join(path.dirname(candidate), `.learning-review-index-${randomUUID()}`);
   try {
     const env = { ...process.env, GIT_INDEX_FILE: index };
     await execFileAsync("git", ["-C", candidate, "read-tree", baseCommit], { env });
@@ -153,6 +155,53 @@ export async function prepareLearningTargetReview({ root, proposalId, targetName
  * rejection never writes to the canonical Clerk repository, but still refuses
  * a canonical HEAD race so the recorded decision identifies a current review.
  */
+export async function approveLearningTarget({ root, proposalId, targetName, decidedAt }) {
+  if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || !Number.isFinite(Date.parse(decidedAt ?? ""))) {
+    throw new Error("invalid Learning approval request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "extracting") {
+    throw new Error("Learning Proposal is not accepting decisions");
+  }
+  const targetIndex = manifest.targets.findIndex(({ name }) => name === targetName);
+  if (targetIndex < 0 || manifest.targets[targetIndex].state !== "review-ready" || !manifest.targets[targetIndex].review) {
+    throw new Error("Learning target is not ready for a decision");
+  }
+  const target = manifest.targets[targetIndex];
+  const repository = await realpath(target.repository);
+  const currentHead = await git(repository, "rev-parse", "HEAD");
+  if (currentHead !== target.baseCommit) {
+    manifest.targets[targetIndex] = { ...target, state: "stale", review: null, stale: { detectedAt: decidedAt, expectedBaseCommit: target.baseCommit, currentHead } };
+    await publishManifest(manifestPath, manifest);
+    throw new Error(`Learning target ${targetName} is stale because canonical HEAD changed`);
+  }
+
+  const candidate = path.join(proposalDirectory, target.candidate);
+  await validateLearningCandidate({ candidateDirectory: candidate, baseCommit: target.baseCommit });
+  const tree = await candidateTree(candidate, target.baseCommit);
+  if (tree !== target.review.identity.candidateTree) throw new Error("Learning candidate changed after review");
+  const symbolicRef = await git(repository, "symbolic-ref", "-q", "HEAD").catch(() => "");
+  if (!symbolicRef.startsWith("refs/heads/")) throw new Error("Learning target HEAD must name a local branch");
+  const message = `Apply approved Learning Proposal ${proposalId} to ${targetName}`;
+  const { stdout } = await execFileAsync("git", ["-C", candidate, "commit-tree", tree, "-p", target.baseCommit, "-m", message], {
+    encoding: "utf8",
+    env: { ...process.env, GIT_AUTHOR_NAME: "ClerkMesh Captain", GIT_AUTHOR_EMAIL: "captain@clerkmesh.local", GIT_COMMITTER_NAME: "ClerkMesh Captain", GIT_COMMITTER_EMAIL: "captain@clerkmesh.local", GIT_AUTHOR_DATE: decidedAt, GIT_COMMITTER_DATE: decidedAt },
+  });
+  const resultCommit = stdout.trim();
+  await git(repository, "fetch", "--quiet", candidate, resultCommit);
+  try {
+    await git(repository, "update-ref", symbolicRef, resultCommit, target.baseCommit);
+  } catch {
+    throw new Error("Learning target HEAD changed during compare-and-swap approval");
+  }
+  const decision = { outcome: "approved", decidedAt, identity: structuredClone(target.review.identity), resultCommit };
+  manifest.targets[targetIndex] = { ...target, state: "approved", review: { ...target.review, reviewedAt: decidedAt }, decision };
+  await publishManifest(manifestPath, manifest);
+  return structuredClone(manifest.targets[targetIndex]);
+}
+
 export async function rejectLearningTarget({ root, proposalId, targetName, reason, decidedAt }) {
   if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || typeof reason !== "string" || reason.trim().length === 0 || reason.length > 4096 || !Number.isFinite(Date.parse(decidedAt ?? ""))) {
     throw new Error("invalid Learning rejection request");

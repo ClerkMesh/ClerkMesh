@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal, prepareLearningTargetReview, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { approveLearningTarget, createLearningProposal, prepareLearningTargetReview, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
@@ -220,6 +220,24 @@ try {
   assert.equal(restartedManifest.targets[1].state, "rejected");
   assert.deepEqual(JSON.parse(await readFile(path.join(learningRunsRoot, proposal.id, "alpha.json"), "utf8")), restarted.endpoint);
   await assert.rejects(restartStaleLearningTargetExtraction({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, startedAt: "2026-03-01T00:09:00.000Z", launchTarget: async () => ({}) }), /not stale/);
+
+  const restartedCandidate = reExtractionLaunches[0].candidateDirectory;
+  await writeFile(path.join(restartedCandidate, "CANDIDATE.md"), "approved learning\n");
+  const approvalReview = await prepareLearningTargetReview({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", sourceDirectory: path.join(sourceRoot, source.id), preparedAt: "2026-03-01T00:09:15.000Z" });
+  await writeFile(path.join(restartedCandidate, "CANDIDATE.md"), "changed after review\n");
+  await assert.rejects(approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:20.000Z" }), /changed after review/);
+  await writeFile(path.join(restartedCandidate, "CANDIDATE.md"), "approved learning\n");
+  await prepareLearningTargetReview({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", sourceDirectory: path.join(sourceRoot, source.id), preparedAt: "2026-03-01T00:09:25.000Z" });
+  const approved = await approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:30.000Z" });
+  assert.equal(approved.state, "approved");
+  assert.deepEqual(approved.decision.identity, approvalReview.identity);
+  assert.equal(approved.decision.outcome, "approved");
+  assert.match(approved.decision.resultCommit, /^[0-9a-f]{40,64}$/);
+  assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD"])).stdout.trim(), approved.decision.resultCommit);
+  assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD^"])).stdout.trim(), advancedHead);
+  assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD^{tree}"])).stdout.trim(), approvalReview.identity.candidateTree);
+  assert.equal((await exec("git", ["-C", beta, "rev-parse", "HEAD"])).stdout.trim(), betaHeadBeforeRejection);
+  await assert.rejects(approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:40.000Z" }), /not ready/);
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);
