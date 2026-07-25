@@ -46,7 +46,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -146,6 +146,9 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
         (typeof eventProjection.snapshot !== "function" || typeof eventProjection.subscribe !== "function")) {
       throw new TypeError("eventProjection snapshot and subscribe are required");
     }
+    if (workProjectionPollers !== undefined && typeof workProjectionPollers.subscribe !== "function") {
+      throw new TypeError("workProjectionPollers.subscribe is required");
+    }
 
     app.register(websocket);
     app.register(async function conversationSocket(socketApp) {
@@ -179,6 +182,11 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
           sendSnapshot();
           return eventProjection.subscribe(sendSnapshot);
         })();
+        const wantsWork = new URL(request.url, "http://localhost").searchParams.get("work") === "true";
+        const unsubscribeWork = !wantsWork || workProjectionPollers === undefined ? () => {} :
+          workProjectionPollers.subscribe((event) => {
+            if (socket.readyState === 1) socket.send(JSON.stringify({ type: "work-projection", ...event }));
+          });
         let disconnected = false;
         socket.on("message", (data, isBinary) => {
           if (isBinary) return socket.close(1003, "text messages only");
@@ -198,6 +206,7 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
             disconnected = true;
             clearInterval(heartbeat);
             unsubscribe();
+            unsubscribeWork();
             writeLease.disconnect(clientToken);
           }
         });

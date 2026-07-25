@@ -53,6 +53,7 @@ export function createConversationApplication({
     writeCoordinator,
     writeLease,
     eventProjection,
+    workProjectionPollers,
     clerkCatalog: () => projectCatalog({ registryPath, clerksRoot }),
     taskGraph: () => queryTaskGraph({ command: resolve(root, "bin/fm-task-graph.sh") }),
     taskDetail: async (taskId) => composeTaskDetail({
