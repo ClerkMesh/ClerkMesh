@@ -18,7 +18,13 @@ export async function composeTaskDetail({ taskId, taskGraph, firstmateRoot }) {
   try {
     const stat = await lstat(briefPath);
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("unsafe brief");
-    const parsed = parseExecutionContextFromBrief(await readFile(briefPath, "utf8"));
+    const brief = await readFile(briefPath, "utf8");
+    let parsed;
+    try {
+      parsed = parseExecutionContextFromBrief(brief);
+    } catch {
+      parsed = parseExecutionContextFromBrief(brief, { expectedExecution: "human" });
+    }
     if (parsed.context.taskId !== taskId) throw new Error("context Task mismatch");
     executionClerk = {
       name: parsed.context.clerk.name,
