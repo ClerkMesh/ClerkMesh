@@ -63,9 +63,10 @@ command -v treehouse >/dev/null 2>&1 || { echo "skip: treehouse not found (requi
 TMP_ROOT=$(mktemp -d "$(cd "${TMPDIR:-/tmp}" && pwd -P)/fm-herdr-e2e.XXXXXX")
 SESSION="fm-lab-herdr-e2e-$$"
 export HERDR_SESSION="$SESSION"
-WT1=; WT2=
+WT1=; WT2=; WEB_POLL_PID=
 cleanup_all() {
   trap - EXIT
+  [ -n "$WEB_POLL_PID" ] && kill "$WEB_POLL_PID" >/dev/null 2>&1 || true
   [ -n "$WT1" ] && command -v treehouse >/dev/null 2>&1 && treehouse return --force "$WT1" >/dev/null 2>&1
   [ -n "$WT2" ] && command -v treehouse >/dev/null 2>&1 && treehouse return --force "$WT2" >/dev/null 2>&1
   herdr_safe_stop_and_delete "$SESSION"
@@ -141,6 +142,16 @@ if printf '%s' "$CM1_PROJECTION" | grep -Eq 'herdr_pane_id|terminal|fm-cm1'; the
   fail "the public Herdr projection leaked a private endpoint identifier or terminal field"
 fi
 
+if [ -n "${S3_004_POLL_EVIDENCE_DIR:-}" ]; then
+  mkdir -p "$S3_004_POLL_EVIDENCE_DIR"
+  FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HOME/state" \
+    node "$ROOT/../tests/cert/s3-004-real-web-polling.mjs" "$ROOT" \
+      "$S3_004_POLL_EVIDENCE_DIR/ready" "$S3_004_POLL_EVIDENCE_DIR/result.json" &
+  WEB_POLL_PID=$!
+  for _ in $(seq 1 100); do [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] && break; sleep 0.1; done
+  [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] || fail "production Web poller did not become ready"
+fi
+
 # --- 2. the PRIMARY spawns a secondmate: its tab lands in the SECONDMATE's own space ---
 # (fm-spawn.sh's herdr case arm shadows FM_HOME to the secondmate's home for
 # exactly this call - AGENTS.md task herdr-sm-spaces-k4, requirement 3.)
@@ -168,6 +179,14 @@ TWO_ENDPOINT_PROJECTION=$(FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HO
 [ "$(printf '%s' "$CM1_PROJECTION" | jq -S 'del(.. | .observedAt?)' | shasum -a 256)" != "$(printf '%s' "$TWO_ENDPOINT_PROJECTION" | jq -S 'del(.. | .observedAt?)' | shasum -a 256)" ] || \
   fail "a genuine endpoint fact change did not change the semantic projection hash"
 pass "real herdr E2E: the public projection reflects genuine endpoint changes while timestamp-only fields are excluded from its semantic hash"
+
+if [ -n "${S3_004_POLL_EVIDENCE_DIR:-}" ]; then
+  for _ in $(seq 1 100); do [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] && break; sleep 0.1; done
+  [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] || fail "production Web poller did not observe the initial genuine endpoint"
+  wait "$WEB_POLL_PID" || fail "production Web poller did not publish the changed genuine endpoint"
+  WEB_POLL_PID=
+  pass "real herdr E2E: production Web polling published the genuine endpoint change on its two-second cadence"
+fi
 
 SM_WSID=$(herdr pane get "$SM_PANE" --session "$SESSION" 2>/dev/null | jq -r '.result.pane.workspace_id // empty')
 [ -n "$SM_WSID" ] || fail "could not read e2esm1's pane workspace_id"
