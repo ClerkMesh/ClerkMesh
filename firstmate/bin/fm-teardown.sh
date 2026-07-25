@@ -1206,6 +1206,14 @@ if [ "$KIND" = secondmate ]; then
 fi
 remove_grok_turnend_auth "$STATE" "$ID"
 fm_backend_clear_transition "$BACKEND" "$STATE" "$T" || true
+# Record successful ordinary Task cleanup before retiring its volatile authority.
+# Secondmate homes are supervisory infrastructure rather than projected Tasks.
+if [ "$KIND" != secondmate ]; then
+  if ! "$FM_ROOT/bin/fm-task-activity-append.sh" --task "$ID" --type teardown-recorded --summary "Task teardown completed" >/dev/null; then
+    echo "error: task teardown completed but durable activity recording failed for $ID; preserving task metadata for diagnosis" >&2
+    exit 1
+  fi
+fi
 # Remove the per-task temp root (/tmp/fm-<id>/, incl. its gotmp/) recorded by spawn.
 # Read before the state-file rm below; empty (pre-fix tasks without tasktmp=) is a no-op.
 [ -n "$TASK_TMP" ] && rm -rf "$TASK_TMP"

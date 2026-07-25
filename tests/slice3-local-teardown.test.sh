@@ -49,6 +49,7 @@ grep -F 'REFUSED: local-only worktree' "$TMP/refused.out" >/dev/null
 [ -d "$WT" ] || { echo 'refused teardown removed the worktree' >&2; exit 1; }
 [ -f "$STATE/$TASK.meta" ] || { echo 'refused teardown removed task authority' >&2; exit 1; }
 [ ! -e "$TREEHOUSE_LOG" ] || { echo 'refused teardown called Treehouse' >&2; exit 1; }
+[ ! -e "$HOME_ROOT/data/$TASK/activity.jsonl" ] || { echo 'refused teardown emitted false activity' >&2; exit 1; }
 
 FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
   "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" --captain-approved >/dev/null
@@ -59,5 +60,10 @@ PATH="$SHIMS:$PATH" FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_S
 [ ! -e "$WT" ] || { echo 'landed worktree survived teardown' >&2; exit 1; }
 [ ! -e "$STATE/$TASK.meta" ] || { echo 'landed task metadata survived teardown' >&2; exit 1; }
 grep -F "return --force $WT" "$TREEHOUSE_LOG" >/dev/null
+node -e '
+  const fs = require("node:fs");
+  const rows = fs.readFileSync(process.argv[1], "utf8").trim().split("\n").map(JSON.parse);
+  if (rows.length !== 2 || rows[0].type !== "landed" || rows[1].type !== "teardown-recorded" || rows[1].cursor !== 2 || rows[1].summary !== "Task teardown completed") process.exit(1);
+' "$HOME_ROOT/data/$TASK/activity.jsonl" || { echo 'successful teardown activity is invalid' >&2; exit 1; }
 
-printf 'ok - local-only teardown refuses unlanded work and removes only safely landed task state\n'
+printf 'ok - local-only teardown refuses unlanded work and records only successful teardown activity\n'
