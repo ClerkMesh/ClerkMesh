@@ -7,6 +7,7 @@ import { buildConversationSessionCatalog } from "./conversation-session-catalog.
 import { ConversationWriteError } from "./conversation-write-coordinator.mjs";
 import { ConversationLeaseError } from "./conversation-write-lease.mjs";
 import { validateConversationEventSnapshot } from "./conversation-event-schema.mjs";
+import { registerConversationClientAssets } from "./conversation-client-assets.mjs";
 
 const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sessions.v1.schema.json", import.meta.url);
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
@@ -39,7 +40,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false }) {
+export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -188,5 +189,6 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
     });
   }
 
+  registerConversationClientAssets(app, clientDist === undefined ? {} : { clientDist });
   return app;
 }
