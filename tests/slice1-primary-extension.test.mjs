@@ -35,6 +35,10 @@ for (const original of ["base prompt", "different run prompt"]) {
 
 for (const rule of [
   /semantic judgment/,
+  /CLERKMESH_ROOT.*clerk-inspect\.sh --index.*CLERKMESH_DATA.*CLERKMESH_CLERKS/,
+  /clerk-inspect\.sh --shortlist.*approved-commit/,
+  /clerk-context-compile\.sh.*explicitly selected material paths/,
+  /do not infer the product root from cwd/i,
   /Never automatically select the Escalation Clerk/,
   /wait for a response before execution/,
   /ordinary Firstmate Worker lifecycle/,
