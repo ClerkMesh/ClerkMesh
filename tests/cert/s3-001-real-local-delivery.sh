@@ -17,7 +17,7 @@ TMP=$(mktemp -d "$(cd "${TMPDIR:-/tmp}" && pwd -P)/clerkmesh-s3-001.XXXXXX")
 HOME_ROOT="$TMP/firstmate"
 PROJECT="$HOME_ROOT/projects/local-delivery"
 TASK=s3local
-SESSION="clerkmesh-s3-001-$$"
+SESSION="fm-lab-clerkmesh-s3-001-$$"
 export HERDR_SESSION="$SESSION"
 WT=
 cleanup() {
