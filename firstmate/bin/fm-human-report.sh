@@ -40,6 +40,10 @@ task_dir="$DATA/$TASK"
 brief="$task_dir/brief.md"
 [ -f "$brief" ] && [ ! -L "$brief" ] \
   || { echo "fm-human-report: Task brief unavailable" >&2; exit 1; }
+context_check="$SCRIPT_DIR/../../packages/clerk-cli/src/human-execution-context-check.mjs"
+[ -f "$context_check" ] \
+  && node "$context_check" "$brief" "$TASK" \
+  || { echo "fm-human-report: Task is not bound to a valid Human Clerk execution" >&2; exit 1; }
 report="$task_dir/report.md"
 [ ! -e "$report" ] || { [ -f "$report" ] && [ ! -L "$report" ]; } \
   || { echo "fm-human-report: unsafe report" >&2; exit 1; }
