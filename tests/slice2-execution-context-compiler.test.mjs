@@ -21,7 +21,8 @@ try {
   const { stdout } = await exec("git", ["-C", repo, "rev-parse", "HEAD"]);
   const commit = stdout.trim();
 
-  const result = await compileExecutionContext({ repositoryPath: repo, commit, taskId: "task-7", selectionReason: "Matches product definition.", selectionBoundaries: "No code changes." });
+  const options = { repositoryPath: repo, commit, taskId: "task-7", selectionReason: "Matches product definition.", selectionBoundaries: "No code changes.", allowedMaterialPaths: ["knowledge/product-rules.md"] };
+  const result = await compileExecutionContext(options);
   assert.equal(result.context.clerk.commit, commit);
   assert.deepEqual(result.context.identity, { role: "Define products.", workingStyle: "Use evidence.", instructions: "Escalate ambiguity." });
   assert.deepEqual(result.context.allowlist.map(({ path }) => path), ["knowledge/product-rules.md"]);
@@ -29,10 +30,17 @@ try {
   assert.equal(JSON.parse(Buffer.from(result.base64, "base64")).taskId, "task-7");
   assert.match(result.sha256, /^[0-9a-f]{64}$/);
 
+  const noMaterials = await compileExecutionContext({ ...options, allowedMaterialPaths: [] });
+  assert.deepEqual(noMaterials.context.allowlist, [], "Primary may explicitly select no material");
+  await assert.rejects(compileExecutionContext({ ...options, allowedMaterialPaths: undefined }), /allowed material paths/);
+  await assert.rejects(compileExecutionContext({ ...options, allowedMaterialPaths: ["sources/private.md"] }), /invalid allowed material path/);
+  await assert.rejects(compileExecutionContext({ ...options, allowedMaterialPaths: ["knowledge/missing.md"] }), /absent from approved commit/);
+  await assert.rejects(compileExecutionContext({ ...options, allowedMaterialPaths: ["knowledge/product-rules.md", "knowledge/product-rules.md"] }), /invalid allowed material path/);
+
   await writeFile(join(repo, "CLERK.md"), `${await readFile(join(repo, "CLERK.md"), "utf8")}\n`);
   await exec("git", ["-C", repo, "add", "CLERK.md"]);
   await exec("git", ["-C", repo, "-c", "user.name=Test", "-c", "user.email=test@invalid", "commit", "-q", "-m", "new head"]);
-  await assert.rejects(compileExecutionContext({ repositoryPath: repo, commit, taskId: "task-7", selectionReason: "match", selectionBoundaries: "bounded" }), /HEAD changed/);
+  await assert.rejects(compileExecutionContext({ ...options, selectionReason: "match", selectionBoundaries: "bounded" }), /HEAD changed/);
   console.log("ok - immutable execution-context compiler contract");
 } finally {
   await rm(root, { recursive: true, force: true });

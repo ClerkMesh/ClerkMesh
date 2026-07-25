@@ -19,7 +19,7 @@ try {
   const commit = (await exec("git", ["-C", repo, "rev-parse", "HEAD"])).stdout.trim();
   await writeFile(brief, "# Task\n\nImplement the product.\n", { mode: 0o640 });
 
-  const common = { repositoryPath: repo, commit, taskId: "task-7", selectionReason: "Best match.", selectionBoundaries: "No deployment.", briefPath: brief };
+  const common = { repositoryPath: repo, commit, taskId: "task-7", selectionReason: "Best match.", selectionBoundaries: "No deployment.", allowedMaterialPaths: [], briefPath: brief };
   const first = await compileExecutionContextIntoBrief(common);
   let content = await readFile(brief, "utf8");
   assert.equal(content.split(EXECUTION_CONTEXT_BEGIN).length - 1, 1);

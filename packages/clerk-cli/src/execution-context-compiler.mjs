@@ -26,8 +26,21 @@ function materialMetadata(source, path) {
   };
 }
 
+function selectedPaths(paths) {
+  if (!Array.isArray(paths) || paths.length > 256) throw new Error("invalid execution context: allowed material paths");
+  const selected = new Set();
+  for (const path of paths) {
+    if (typeof path !== "string" || !ALLOWED_PATH.test(path) || selected.has(path)) {
+      throw new Error(`invalid allowed material path: ${String(path)}`);
+    }
+    selected.add(path);
+  }
+  return selected;
+}
+
 /** Compile one immutable approved Clerk snapshot into the path-free v1 payload. */
-export async function compileExecutionContext({ repositoryPath, commit, taskId, selectionReason, selectionBoundaries }) {
+export async function compileExecutionContext({ repositoryPath, commit, taskId, selectionReason, selectionBoundaries, allowedMaterialPaths }) {
+  const selected = selectedPaths(allowedMaterialPaths);
   const root = resolve(repositoryPath);
   const clerk = await inspectApprovedClerkCommit({ repositoryPath: root, commit, expectedName: basename(root) });
   const { stdout: headOutput } = await execFileAsync("git", ["-C", root, "rev-parse", "--verify", "HEAD^{commit}"], { encoding: "utf8" });
@@ -38,12 +51,17 @@ export async function compileExecutionContext({ repositoryPath, commit, taskId, 
   for (const line of tree.trim().split("\n")) {
     if (!line) continue;
     const match = line.match(/^100644 blob ([0-9a-f]{40})\t(.+)$/);
-    if (!match || !ALLOWED_PATH.test(match[2])) continue;
+    if (!match || !selected.has(match[2])) continue;
     const path = match[2];
     const { stdout } = await execFileAsync("git", ["-C", root, "show", `${clerk.commit}:${path}`], { encoding: "utf8", maxBuffer: 1024 * 1024 });
     allowlist.push({ path, ...materialMetadata(stdout, path), blobOid: match[1] });
   }
   allowlist.sort((left, right) => left.path.localeCompare(right.path));
+  if (allowlist.length !== selected.size) {
+    const found = new Set(allowlist.map(({ path }) => path));
+    const missing = [...selected].find((path) => !found.has(path));
+    throw new Error(`allowed material is absent from approved commit: ${missing}`);
+  }
 
   const context = {
     schema: "clerkmesh.execution-context.v1",
