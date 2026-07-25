@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createLearningProposal, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 
 const exec = promisify(execFile);
 const fixture = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-learning-proposal-"));
@@ -41,7 +41,28 @@ try {
     assert.equal((await exec("git", ["-C", candidate, "rev-parse", "HEAD"])).stdout.trim(), target.baseCommit);
     await writeFile(path.join(candidate, "CANDIDATE.md"), "isolated\n");
     await assert.rejects(readFile(path.join(target.name === "alpha" ? alpha : beta, "CANDIDATE.md")), /ENOENT/);
+    assert.deepEqual(await validateLearningCandidate({ candidateDirectory: candidate, baseCommit: target.baseCommit }), {
+      baseCommit: target.baseCommit,
+      changedPaths: ["CANDIDATE.md"],
+    });
   }
+
+  const alphaCandidate = path.join(proposalRoot, proposal.id, proposal.targets[0].candidate);
+  await writeFile(path.join(alphaCandidate, "generated.sh"), "echo forbidden\n");
+  await assert.rejects(validateLearningCandidate({ candidateDirectory: alphaCandidate, baseCommit: proposal.targets[0].baseCommit }), /only change Markdown/);
+  await rm(path.join(alphaCandidate, "generated.sh"));
+  await writeFile(path.join(alphaCandidate, "executable.md"), "# no\n");
+  await chmod(path.join(alphaCandidate, "executable.md"), 0o700);
+  await assert.rejects(validateLearningCandidate({ candidateDirectory: alphaCandidate, baseCommit: proposal.targets[0].baseCommit }), /must not be executable/);
+  await rm(path.join(alphaCandidate, "executable.md"));
+  await symlink("CANDIDATE.md", path.join(alphaCandidate, "linked.md"));
+  await assert.rejects(validateLearningCandidate({ candidateDirectory: alphaCandidate, baseCommit: proposal.targets[0].baseCommit }), /regular file/);
+  await rm(path.join(alphaCandidate, "linked.md"));
+  await writeFile(path.join(alphaCandidate, "binary.md"), Buffer.from([0, 1, 2]));
+  await assert.rejects(validateLearningCandidate({ candidateDirectory: alphaCandidate, baseCommit: proposal.targets[0].baseCommit }), /must not be binary/);
+  await rm(path.join(alphaCandidate, "binary.md"));
+  await assert.rejects(validateLearningCandidate({ candidateDirectory: alphaCandidate, baseCommit: "0".repeat(40) }), /HEAD does not match/);
+
   const persisted = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
   assert.deepEqual(persisted, proposal);
 

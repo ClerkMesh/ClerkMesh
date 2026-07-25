@@ -27,6 +27,51 @@ async function git(cwd, ...args) {
 }
 
 /**
+ * Fail closed unless every extraction-created change is a plain, non-executable
+ * UTF-8 Markdown file (or the deletion of one). Baseline repository content is
+ * intentionally ignored: this boundary governs what extraction generated.
+ */
+export async function validateLearningCandidate({ candidateDirectory, baseCommit }) {
+  const candidate = await realpath(candidateDirectory);
+  const stat = await lstat(candidate);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || !COMMIT.test(baseCommit ?? "")) throw new Error("invalid Learning candidate or base commit");
+  if (await git(candidate, "rev-parse", "HEAD") !== baseCommit) throw new Error("Learning candidate HEAD does not match its fixed base commit");
+
+  const { stdout } = await execFileAsync("git", ["-C", candidate, "status", "--porcelain=v1", "-z", "--untracked-files=all"], { encoding: "utf8" });
+  const records = stdout.split("\0").filter(Boolean);
+  const changedPaths = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index];
+    const status = record.slice(0, 2);
+    const relative = record.slice(3);
+    if (status.includes("R") || status.includes("C")) {
+      index += 1; // porcelain emits the second rename/copy path as another NUL record
+      throw new Error("Learning extraction may not rename or copy files");
+    }
+    if (!relative.endsWith(".md") || path.isAbsolute(relative) || relative.split(/[\\/]/).includes("..")) {
+      throw new Error(`Learning extraction may only change Markdown files: ${relative}`);
+    }
+    changedPaths.push(relative);
+    if (status.includes("D")) continue;
+    const file = path.join(candidate, relative);
+    const fileStat = await lstat(file);
+    if (!fileStat.isFile() || fileStat.isSymbolicLink()) throw new Error(`Learning extraction output must be a regular file: ${relative}`);
+    if ((fileStat.mode & 0o111) !== 0) throw new Error(`Learning extraction output must not be executable: ${relative}`);
+    const resolved = await realpath(file);
+    const relation = path.relative(candidate, resolved);
+    if (relation === ".." || relation.startsWith(`..${path.sep}`) || path.isAbsolute(relation)) throw new Error(`Learning extraction output escapes its candidate: ${relative}`);
+    const bytes = await readFile(file);
+    try {
+      new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error(`Learning extraction output must be UTF-8 Markdown: ${relative}`);
+    }
+    if (bytes.includes(0)) throw new Error(`Learning extraction output must not be binary: ${relative}`);
+  }
+  return { baseCommit, changedPaths: changedPaths.sort() };
+}
+
+/**
  * Create the authoritative immutable-base manifest and isolated candidate clones
  * for a multi-target Learning Proposal. Extraction is launched separately.
  */
