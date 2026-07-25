@@ -51,14 +51,15 @@ A requirement is marked complete only when the linked commands and artifacts are
 | S1-005 | complete | Projection and reconstruction contracts are exercised by `test:slice1-schema`; the tracked certification uses genuine Pi RPC and browser-equivalent WebSocket refresh | `corepack pnpm run cert:slice1-refresh-restart`; `evidence/slice-1/s1-005-refresh-restart.md` |
 | S1-006 | complete | Supervisor and application contracts prove owned-child cleanup, Worker-independent shutdown, offline projection, and no auto-restart | `corepack pnpm run cert:slice1-shutdown-offline` uses genuine Pi children and an independent live Worker ownership tripwire; `evidence/slice-1/s1-006-shutdown-offline.md` |
 | CERT-002 | complete | Contract tests verify complete once-per-run protocol injection; the opt-in real runner verifies canonical extension loading, command discovery, extension UI, Pi RPC stream, and settled model execution | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
-| CLERK-001 | partial | `test:slice2-clerk-repository` freezes and verifies the strict root contract: independent Git metadata, exact frontmatter, ordered six-section `CLERK.md`, size limits, approved root layout, and symlink/nested-repository refusal | Detailed material and Skill validation plus lifecycle integration remain |
-| S2-001 | partial | `test:slice2-clerk-repository` verifies the first create/validate dependency, the Clerk repository root contract, against isolated fixtures | create/register, real Git commit semantics, and dirty-content certification remain |
+| CLERK-001 | partial | `test:slice2-clerk-repository` freezes and verifies the strict repository contract: independent Git metadata, exact frontmatter, ordered six-section `CLERK.md`, size limits, approved root layout, indexed material metadata, Skill structure, and symlink/nested-repository refusal | Lifecycle integration remains |
+| CLERK-005 | partial | `test:slice2-clerk-repository` rejects executable material outside Skills and rejects every Skill auxiliary file not explicitly referenced by its `SKILL.md`, while permitting unindexed raw Sources | Commit approval semantics and capability permission containment remain |
+| S2-001 | partial | `test:slice2-clerk-repository` verifies the create/validate dependencies, including detailed material and Skill validation, against isolated fixtures | create/register, real Git commit semantics, and dirty-content certification remain |
 
 ## Slice 2 compact requirement-to-test matrix
 
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
-| S2-001 | CLERK-001–005, LIFE-001–004 | isolated real-Git lifecycle integration, dirty-tree and recovery cases | Root repository contract frozen; lifecycle commands next |
+| S2-001 | CLERK-001–005, LIFE-001–004 | isolated real-Git lifecycle integration, dirty-tree and recovery cases | Repository root, material, and Skill contracts frozen; lifecycle commands next |
 | S2-002 | EXEC-001–003 | extension run/launch contracts plus real Pi certification | Slice 1 extension evidence reusable; Worker exclusion remains |
 | S2-003 | EXEC-004–008 | real Primary selection and canonical execution-context/brief verification | Lifecycle/catalog and shared execution-context schema |
 | S2-004 | EXEC-010–012 | real Worker capability allowlist/refusal/audit certification | Compiled brief and capability interface must be frozen first |

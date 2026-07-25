@@ -12,6 +12,23 @@ function fail(message) {
   throw new Error(`invalid Clerk repository: ${message}`);
 }
 
+function parseFrontmatter(source, label) {
+  const match = source.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  if (!match) fail(`${label} must contain a leading YAML frontmatter block`);
+  const document = parseDocument(match[1], { prettyErrors: false, uniqueKeys: true });
+  if (document.errors.length > 0) fail(`invalid ${label} frontmatter: ${document.errors[0].message}`);
+  const metadata = document.toJS();
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") fail(`${label} frontmatter must be a mapping`);
+  return metadata;
+}
+
+function validateIndexMetadata(source, label, expectedName) {
+  const metadata = parseFrontmatter(source, label);
+  if (Object.keys(metadata).sort().join(",") !== "description,name") fail(`${label} frontmatter must contain only name and description`);
+  if (metadata.name !== expectedName || !NAME_PATTERN.test(metadata.name)) fail(`${label} name must equal its file or directory name`);
+  if (typeof metadata.description !== "string" || metadata.description.trim() === "") fail(`${label} description must be non-empty text`);
+}
+
 function parseClerkDocument(source) {
   const match = source.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) fail("CLERK.md must contain a leading YAML frontmatter block");
@@ -28,6 +45,57 @@ function parseClerkDocument(source) {
     fail(`CLERK.md must contain exactly these ordered sections: ${SECTIONS.join(", ")}`);
   }
   return frontmatter;
+}
+
+async function validateMaterialDirectory(root, directoryName) {
+  const directory = join(root, directoryName);
+  let entries;
+  try { entries = await readdir(directory, { withFileTypes: true }); } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) fail(`${directoryName}/ may contain only Markdown files`);
+    if (entry.name === "README.md") continue;
+    const source = await readFile(join(directory, entry.name), "utf8");
+    validateIndexMetadata(source, `${directoryName}/${entry.name}`, entry.name.slice(0, -3));
+  }
+}
+
+async function listRelativeFiles(directory, prefix = "") {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) files.push(...await listRelativeFiles(join(directory, entry.name), relative));
+    else files.push(relative);
+  }
+  return files;
+}
+
+async function validateSkills(root) {
+  const directory = join(root, "skills");
+  let entries;
+  try { entries = await readdir(directory, { withFileTypes: true }); } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !NAME_PATTERN.test(entry.name)) fail("skills/ may contain only named skill directories");
+    const skillRoot = join(directory, entry.name);
+    let source;
+    try { source = await readFile(join(skillRoot, "SKILL.md"), "utf8"); } catch { fail(`skills/${entry.name}/SKILL.md is required`); }
+    validateIndexMetadata(source, `skills/${entry.name}/SKILL.md`, entry.name);
+    for (const relative of await listRelativeFiles(skillRoot)) {
+      if (relative === "SKILL.md") continue;
+      const stat = await lstat(join(skillRoot, relative));
+      const isScript = (stat.mode & 0o111) !== 0 || /\.(?:sh|bash|py|js|mjs|cjs|ts)$/.test(relative);
+      if (!isScript) continue;
+      const escaped = relative.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!new RegExp(`(?:\\(|\`|\\s)${escaped}(?:\\)|\`|\\s|$)`).test(source)) {
+        fail(`skills/${entry.name}/${relative} is not explicitly referenced by SKILL.md`);
+      }
+    }
+  }
 }
 
 async function rejectForbiddenObjects(directory, root = true) {
@@ -69,6 +137,13 @@ export async function validateClerkRepository({ repositoryPath, expectedName = b
   if (typeof metadata.description !== "string" || metadata.description.trim() === "") fail("description must be non-empty text");
   if (Buffer.byteLength(metadata.description.trim()) > DESCRIPTION_MAX_BYTES) fail("description exceeds 1024 UTF-8 bytes");
   if (metadata.execution !== "human" && metadata.execution !== "agent") fail("execution must be human or agent");
+
+  await Promise.all([
+    validateMaterialDirectory(canonicalInput, "workflows"),
+    validateMaterialDirectory(canonicalInput, "knowledge"),
+    validateMaterialDirectory(canonicalInput, "cases"),
+    validateSkills(canonicalInput),
+  ]);
 
   return Object.freeze({ name: metadata.name, description: metadata.description.trim(), execution: metadata.execution });
 }
