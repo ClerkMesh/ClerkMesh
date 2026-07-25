@@ -149,7 +149,7 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
 | S5-001 | LEARN-001–002 | explicit immutable Source capture plus automatic-learning refusal matrix | **Complete:** production explicit imports and accepted Human reports create immutable Sources; warning and automatic-origin refusal matrices pass; the genuine-Pi isolated fixture verifies exact report bytes and task/hash/Captain provenance; `test:slice5-learning`, `test:slice4-human`, `cert:slice4-human-agent-handoff`; `evidence/slice-5/s5-001-learning-source-capture.md` |
-| S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | **In progress:** authoritative immutable-base two-target Proposal creation, filesystem/Git-isolated candidate clones, fail-closed Markdown-only output enforcement, and extraction state/endpoint persistence pass. The production `learning-proposal extract` command binds a Proposal/Source-derived, non-Task Pi extraction policy to one explicitly selected Herdr session; the launcher creates one Proposal-dedicated workspace with independent per-target tabs/panes and safely removes the exact seeded tab only after a real tab exists. Exact endpoint authority is written under `learning-runs/` before the manifest becomes extracting; real-Herdr certification and owner-exit continuity remain. |
+| S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | **Complete:** authoritative immutable-base two-target Proposal creation, filesystem/Git-isolated candidate clones, fail-closed Markdown-only enforcement, and exact endpoint persistence pass. The production launcher binds Proposal/Source-derived non-Task Pi policy to one explicit session and one dedicated workspace with independent target tabs/panes. A reproducible genuine Herdr/Pi run proved both Agents continued after the launch owner returned and independently produced validated Markdown candidates without touching canonical Clerk repositories. Evidence: `evidence/slice-5/s5-002-real-learning-extraction.md`. |
 | S5-003 | LEARN-005 | complete review, revision invalidation, HEAD race stale, and re-extraction | Not started |
 | S5-004 | LEARN-006 | independent approve/reject with approved-target-only CAS commit | Not started |
 | S5-005 | LEARN-008 | restart reconciliation for live, complete, and interrupted runs | Not started |
@@ -163,5 +163,5 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 2: **complete** (S2-001 through S2-007)
 - Slice 3: **complete** (S3-001 through S3-007)
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
-- Slice 5: **in progress** (S5-001 complete; S5-002 genuine two-target extraction is next)
+- Slice 5: **in progress** (S5-001–S5-002 complete; S5-003 diff review and invalidation is next)
 - Release Gate: **not started**
