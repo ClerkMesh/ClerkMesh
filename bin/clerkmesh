@@ -199,6 +199,12 @@ import_learning_source() {
   exec node "$CLERKMESH_ROOT/packages/learning-core/src/learning-source-import-cli.mjs" "$@"
 }
 
+extract_learning_proposal() {
+  require_initialized
+  shift
+  exec node "$CLERKMESH_ROOT/packages/learning-core/src/learning-extraction-cli.mjs" "$@"
+}
+
 case "${1:-}" in
   init)
     [ "$#" -eq 1 ] || fatal "usage: clerkmesh init"
@@ -222,5 +228,10 @@ case "${1:-}" in
     shift
     import_learning_source "$@"
     ;;
-  *) fatal "usage: clerkmesh init | primary --tui | web [--gate0-cert] | learning-source import [--agent-generated] FILE" ;;
+  learning-proposal)
+    [ "${2:-}" = extract ] || fatal "usage: clerkmesh learning-proposal extract PROPOSAL_ID --session HERDR_SESSION"
+    shift
+    extract_learning_proposal "$@"
+    ;;
+  *) fatal "usage: clerkmesh init | primary --tui | web [--gate0-cert] | learning-source import [--agent-generated] FILE | learning-proposal extract PROPOSAL_ID --session HERDR_SESSION" ;;
 esac
