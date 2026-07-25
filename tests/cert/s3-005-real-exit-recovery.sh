@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd -P)
-EVIDENCE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/clerkmesh-s3-005.XXXXXX")
-trap 'rm -rf "$EVIDENCE_DIR"' EXIT
+if [ -n "${S3_005_EVIDENCE_DIR:-}" ]; then
+  EVIDENCE_DIR=$S3_005_EVIDENCE_DIR
+  mkdir -p "$EVIDENCE_DIR"
+else
+  EVIDENCE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/clerkmesh-s3-005.XXXXXX")
+  trap 'rm -rf "$EVIDENCE_DIR"' EXIT
+fi
 PATH="$ROOT/cache/bin:$PATH" S3_005_RECOVERY_EVIDENCE_DIR="$EVIDENCE_DIR" \
   bash "$ROOT/firstmate/tests/fm-backend-herdr-workspace-per-home-e2e.test.sh"
 [ -s "$EVIDENCE_DIR/result.json" ]
