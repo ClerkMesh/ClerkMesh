@@ -8,6 +8,7 @@ import { captureLearningSource } from "../packages/learning-core/src/learning-so
 import { approveLearningTarget, createLearningProposal, prepareLearningTargetReview, reconcileLearningExtraction, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningInspector, createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
+import { reconcileLearningProposal } from "../packages/learning-core/src/learning-reconciliation-command.mjs";
 
 const exec = promisify(execFile);
 const fixture = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-learning-proposal-"));
@@ -21,11 +22,12 @@ async function repository(name) {
 }
 
 try {
-  const sourceRoot = path.join(fixture, "sources");
+  const stateDirectory = path.join(fixture, "clerkmesh-state");
+  const sourceRoot = path.join(stateDirectory, "learning-sources");
   const source = await captureLearningSource({ root: sourceRoot, origin: "explicit_import", content: "# Evidence\n", capturedAt: "2026-03-01T00:00:00.000Z" });
   const alpha = await repository("alpha");
   const beta = await repository("beta");
-  const proposalRoot = path.join(fixture, "proposals");
+  const proposalRoot = path.join(stateDirectory, "learning-proposals");
   const proposal = await createLearningProposal({
     root: proposalRoot,
     sourceDirectory: path.join(sourceRoot, source.id),
@@ -104,7 +106,7 @@ try {
   await assert.rejects(inspectTarget({ ...endpoint("running"), session: "bad session" }), /invalid Herdr Learning endpoint/);
   await assert.rejects(createHerdrLearningInspector({ execute: async () => { throw new Error("offline"); } })(endpoint("running")), /inspection failed/);
 
-  const learningRunsRoot = path.join(fixture, "clerkmesh-state", "learning-runs");
+  const learningRunsRoot = path.join(stateDirectory, "learning-runs");
   const extraction = await startLearningExtraction({
     root: proposalRoot,
     proposalId: proposal.id,
@@ -284,19 +286,20 @@ try {
     launchTarget: async ({ target }) => ({ backend: "herdr", session: "recovery", workspaceId: "recovery-workspace", tabId: `tab-${target}`, paneId: `pane-${target}` }),
   });
   await writeFile(path.join(proposalRoot, recovery.id, recovery.targets[0].candidate, "RECOVERED.md"), "complete before restart\n");
-  const inspected = [];
-  const reconciled = await reconcileLearningExtraction({
-    root: proposalRoot,
+  const reconciliationCalls = [];
+  const reconciled = await reconcileLearningProposal({
+    stateDirectory,
     proposalId: recovery.id,
-    sourceDirectory: path.join(sourceRoot, source.id),
-    learningRunsRoot,
     reconciledAt: "2026-03-01T00:12:00.000Z",
-    inspectTarget: async (endpoint) => {
-      inspected.push(endpoint.target);
-      return endpoint.target === "gamma" ? "complete" : "interrupted";
+    execute: async (command, args) => {
+      reconciliationCalls.push([command, ...args]);
+      const pane = args[2];
+      if (pane === "pane-delta") throw Object.assign(new Error("absent"), { stderr: "pane_not_found" });
+      return { stdout: JSON.stringify(args[0] === "agent" ? { result: { agent: { agent_status: "done" } } } : { result: {} }) };
     },
   });
-  assert.deepEqual(inspected, ["gamma", "delta"]);
+  assert.deepEqual(reconciliationCalls.map((call) => call[1]), ["pane", "agent", "pane"]);
+  assert.ok(reconciliationCalls.every((call) => call.slice(-2).join(" ") === "--session recovery"));
   assert.equal(reconciled.state, "interrupted");
   assert.deepEqual(reconciled.targets.map(({ state }) => state), ["review-ready", "interrupted"]);
   assert.deepEqual(reconciled.targets[0].review.changedPaths, ["RECOVERED.md"]);
