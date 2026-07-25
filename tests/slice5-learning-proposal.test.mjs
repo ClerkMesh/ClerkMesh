@@ -237,7 +237,11 @@ try {
   assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD^"])).stdout.trim(), advancedHead);
   assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD^{tree}"])).stdout.trim(), approvalReview.identity.candidateTree);
   assert.equal((await exec("git", ["-C", beta, "rev-parse", "HEAD"])).stdout.trim(), betaHeadBeforeRejection);
-  await assert.rejects(approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:40.000Z" }), /not ready/);
+  const resolvedManifest = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
+  assert.equal(resolvedManifest.state, "resolved");
+  assert.equal(resolvedManifest.resolvedAt, "2026-03-01T00:09:30.000Z");
+  assert.deepEqual(resolvedManifest.targets.map(({ state }) => state), ["approved", "rejected"]);
+  await assert.rejects(approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:40.000Z" }), /not accepting decisions/);
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);

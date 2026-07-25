@@ -198,8 +198,15 @@ export async function approveLearningTarget({ root, proposalId, targetName, deci
   }
   const decision = { outcome: "approved", decidedAt, identity: structuredClone(target.review.identity), resultCommit };
   manifest.targets[targetIndex] = { ...target, state: "approved", review: { ...target.review, reviewedAt: decidedAt }, decision };
+  resolveProposalIfDecided(manifest, decidedAt);
   await publishManifest(manifestPath, manifest);
   return structuredClone(manifest.targets[targetIndex]);
+}
+
+function resolveProposalIfDecided(manifest, resolvedAt) {
+  if (!manifest.targets.every(({ state }) => state === "approved" || state === "rejected")) return;
+  manifest.state = "resolved";
+  manifest.resolvedAt = resolvedAt;
 }
 
 export async function rejectLearningTarget({ root, proposalId, targetName, reason, decidedAt }) {
@@ -241,6 +248,7 @@ export async function rejectLearningTarget({ root, proposalId, targetName, reaso
     review: { ...target.review, reviewedAt: decidedAt },
     decision,
   };
+  resolveProposalIfDecided(manifest, decidedAt);
   await publishManifest(manifestPath, manifest);
   return structuredClone(manifest.targets[targetIndex]);
 }
