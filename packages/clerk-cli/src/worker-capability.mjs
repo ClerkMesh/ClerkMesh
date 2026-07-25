@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { appendFile, mkdir } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
+import { appendFile, lstat, mkdir, realpath } from "node:fs/promises";
+import { basename, isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { readExecutionContextFromBrief } from "./execution-context-reader.mjs";
 
@@ -14,16 +14,39 @@ function publicError(message) {
   return error;
 }
 
+async function capabilityAuditPath(stateRoot, contextSha256) {
+  if (typeof stateRoot !== "string" || !isAbsolute(stateRoot)) throw publicError("canonical capability state root is required");
+  let canonicalState;
+  try {
+    if ((await lstat(stateRoot)).isSymbolicLink()) throw new Error("symlink");
+    canonicalState = await realpath(stateRoot);
+  } catch {
+    throw publicError("canonical capability state root is unavailable");
+  }
+  if (canonicalState !== resolve(stateRoot)) throw publicError("capability state root is not canonical");
+  const directory = join(canonicalState, "capabilities");
+  try {
+    await mkdir(directory, { recursive: false, mode: 0o700 });
+  } catch (error) {
+    if (error.code !== "EEXIST") throw publicError("capability audit directory is unavailable");
+  }
+  try {
+    if ((await lstat(directory)).isSymbolicLink() || await realpath(directory) !== directory) throw new Error("unsafe");
+  } catch {
+    throw publicError("capability audit directory is unsafe");
+  }
+  return join(directory, `${contextSha256}.jsonl`);
+}
+
 /** Create bounded Worker list/search/read operations over one immutable Clerk snapshot. */
-export async function createWorkerCapability({ briefPath, repositoryPath, auditPath, now = () => new Date() }) {
+export async function createWorkerCapability({ briefPath, repositoryPath, stateRoot, now = () => new Date() }) {
   const root = resolve(repositoryPath);
   const { context, sha256 } = await readExecutionContextFromBrief(briefPath);
   if (basename(root) !== context.clerk.name) throw publicError("Clerk repository does not match execution context");
-  if (typeof auditPath !== "string" || !auditPath) throw publicError("capability audit path is required");
+  const auditPath = await capabilityAuditPath(stateRoot, sha256);
   const entries = new Map(context.allowlist.map((entry) => [entry.path, entry]));
 
   async function audit(operation, path, outcome) {
-    await mkdir(dirname(auditPath), { recursive: true });
     await appendFile(auditPath, `${JSON.stringify({ schema: "clerkmesh.capability-audit.v1", observedAt: now().toISOString(), taskId: context.taskId, contextSha256: sha256, operation, ...(path ? { path } : {}), outcome })}\n`, { encoding: "utf8", mode: 0o600 });
   }
 

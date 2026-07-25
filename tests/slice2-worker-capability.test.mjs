@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -29,8 +29,11 @@ const context = {
 const encoded = encodeExecutionContext(context);
 const briefPath = join(root, "brief.md");
 await writeFile(briefPath, `# Brief\n<!-- clerkmesh:execution-context:v1 -->\nschema: clerkmesh.execution-context.v1\nencoding: canonical-json-base64\nsha256: ${encoded.sha256}\npayload: ${encoded.base64}\n<!-- /clerkmesh:execution-context:v1 -->\n`);
-const auditPath = join(root, "state", "capabilities", "task-17.jsonl");
-const capability = await createWorkerCapability({ briefPath, repositoryPath, auditPath, now: () => new Date("2026-01-02T03:04:05Z") });
+const stateRootPath = join(root, "state");
+await mkdir(stateRootPath);
+const stateRoot = await realpath(stateRootPath);
+const auditPath = join(stateRoot, "capabilities", `${encoded.sha256}.jsonl`);
+const capability = await createWorkerCapability({ briefPath, repositoryPath, stateRoot, now: () => new Date("2026-01-02T03:04:05Z") });
 assert.deepEqual(await capability.list(), context.allowlist);
 assert.equal(await capability.read(materialPath), approved);
 assert.deepEqual(await capability.search("beta"), [{ path: materialPath, line: 6, text: "Beta boundary" }]);
@@ -49,5 +52,15 @@ assert(audit.every((event) => event.contextSha256 === encoded.sha256 && !JSON.st
 
 const wrongRoot = join(root, "wrong-clerk");
 await mkdir(wrongRoot);
-await assert.rejects(createWorkerCapability({ briefPath, repositoryPath: wrongRoot, auditPath }), /does not match/);
-console.log("ok - immutable audited Worker capability operations");
+await assert.rejects(createWorkerCapability({ briefPath, repositoryPath: wrongRoot, stateRoot }), /does not match/);
+await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: "relative-state" }), (error) => error.code === "CAPABILITY_REFUSED");
+const externalState = join(root, "external-state");
+const linkedState = join(root, "linked-state");
+await mkdir(externalState);
+await symlink(externalState, linkedState);
+await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: linkedState }), (error) => error.code === "CAPABILITY_REFUSED");
+const unsafeState = join(root, "unsafe-state");
+await mkdir(unsafeState);
+await symlink(externalState, join(unsafeState, "capabilities"));
+await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: unsafeState }), (error) => error.code === "CAPABILITY_REFUSED");
+console.log("ok - immutable audited Worker capability operations with canonical state containment");
