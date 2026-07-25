@@ -261,6 +261,8 @@ EOF
     > "$home/drifted-routes.out" 2> "$home/drifted-routes.err"; then
     fail "resolution retry accepted a different routed task set"
   fi
+  [ "$(grep -c '"type":"decision-recorded".*"summary":"Captain decision route recorded"' "$home/data/$id/activity.jsonl")" -eq 1 ] \
+    || fail "decision resolution did not record exactly one idempotent structured activity event"
   show=$(tasks_in "$home" show "$route_hold" --full)
   assert_contains "$show" "state: done" "resolved hold did not close"
   assert_contains "$show" "Resolution recorded by fm-decision-hold" "resolved hold lost the decision record"

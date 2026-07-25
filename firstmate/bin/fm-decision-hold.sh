@@ -367,6 +367,15 @@ EOF
   printf 'verified: %s unresolved-decision inventory\n' "$origin"
 }
 
+record_decision_activity() {  # <origin-task> <decision-key>
+  local origin=$1 key=$2 activity="$DATA/$1/activity.jsonl" summary="Captain decision $2 recorded"
+  if [ -f "$activity" ] && grep -F '"type":"decision-recorded"' "$activity" | grep -Fq "\"summary\":\"$summary\""; then
+    return 0
+  fi
+  "$SCRIPT_DIR/fm-task-activity-append.sh" --task "$origin" --type decision-recorded --summary "$summary" >/dev/null \
+    || fail "captain decision was recorded but Task activity could not be recorded"
+}
+
 command_resolve() {
   local origin=${1:-} key=${2:-} decision_file='' id='' decision='' decision_digest='' body='' routed='' routed_csv='' dep show blocked state hold_show hold_body resolution_recorded=0
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
@@ -397,6 +406,7 @@ command_resolve() {
     hold_show=$(task_show "$id")
     hold_body=$(show_field "$hold_show" body)
     verify_resolution_identity "$id" "$hold_body" "$decision_digest" "$routed_csv"
+    record_decision_activity "$origin" "$key"
     printf 'resolved: %s\n' "$id"
     return 0
   fi
@@ -450,6 +460,7 @@ command_resolve() {
   done
   tasks_axi "done" "$id" >/dev/null || fail "could not close resolved captain hold $id"
   verify_hold_resolved "$id" || fail "captain hold $id did not retain its durable resolution record"
+  record_decision_activity "$origin" "$key"
   printf 'resolved: %s -> %s\n' "$id" "$routed"
 }
 
