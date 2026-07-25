@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal, prepareLearningTargetReview, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createLearningProposal, prepareLearningTargetReview, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
@@ -144,6 +144,34 @@ try {
   assert.deepEqual(reviewedManifest.targets[0].review, revisedReview);
   assert.equal(reviewedManifest.targets[1].state, "extracting");
 
+  const betaHeadBeforeRejection = (await exec("git", ["-C", beta, "rev-parse", "HEAD"])).stdout.trim();
+  const betaReview = await prepareLearningTargetReview({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "beta",
+    sourceDirectory: path.join(sourceRoot, source.id),
+    preparedAt: "2026-03-01T00:06:30.000Z",
+  });
+  const rejected = await rejectLearningTarget({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "beta",
+    reason: "Not appropriate for this Clerk",
+    decidedAt: "2026-03-01T00:06:45.000Z",
+  });
+  assert.equal(rejected.state, "rejected");
+  assert.equal(rejected.review.reviewedAt, "2026-03-01T00:06:45.000Z");
+  assert.deepEqual(rejected.decision, {
+    outcome: "rejected",
+    decidedAt: "2026-03-01T00:06:45.000Z",
+    reason: "Not appropriate for this Clerk",
+    identity: betaReview.identity,
+    resultCommit: null,
+  });
+  assert.equal((await exec("git", ["-C", beta, "rev-parse", "HEAD"])).stdout.trim(), betaHeadBeforeRejection);
+  assert.equal((await exec("git", ["-C", beta, "status", "--porcelain"])).stdout, "");
+  await assert.rejects(rejectLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "beta", reason: "again", decidedAt: "2026-03-01T00:06:50.000Z" }), /not ready/);
+
   await writeFile(path.join(alpha, "CLERK.md"), "# alpha advanced\n");
   await exec("git", ["-C", alpha, "add", "CLERK.md"]);
   await exec("git", ["-C", alpha, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "canonical advance"]);
@@ -163,7 +191,7 @@ try {
     expectedBaseCommit: proposal.targets[0].baseCommit,
     currentHead: advancedHead,
   });
-  assert.equal(staleManifest.targets[1].state, "extracting");
+  assert.equal(staleManifest.targets[1].state, "rejected");
 
   const reExtractionLaunches = [];
   const restarted = await restartStaleLearningTargetExtraction({
@@ -189,7 +217,7 @@ try {
   assert.equal(restarted.endpoint.tabId, "tab-alpha-2");
   const restartedManifest = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
   assert.deepEqual(restartedManifest.targets[0], restarted.target);
-  assert.equal(restartedManifest.targets[1].state, "extracting");
+  assert.equal(restartedManifest.targets[1].state, "rejected");
   assert.deepEqual(JSON.parse(await readFile(path.join(learningRunsRoot, proposal.id, "alpha.json"), "utf8")), restarted.endpoint);
   await assert.rejects(restartStaleLearningTargetExtraction({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, startedAt: "2026-03-01T00:09:00.000Z", launchTarget: async () => ({}) }), /not stale/);
 

@@ -148,6 +148,54 @@ export async function prepareLearningTargetReview({ root, proposalId, targetName
   return structuredClone(review);
 }
 
+/**
+ * Persist an independent Captain rejection for one fully reviewed target. A
+ * rejection never writes to the canonical Clerk repository, but still refuses
+ * a canonical HEAD race so the recorded decision identifies a current review.
+ */
+export async function rejectLearningTarget({ root, proposalId, targetName, reason, decidedAt }) {
+  if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || typeof reason !== "string" || reason.trim().length === 0 || reason.length > 4096 || !Number.isFinite(Date.parse(decidedAt ?? ""))) {
+    throw new Error("invalid Learning rejection request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "extracting") {
+    throw new Error("Learning Proposal is not accepting decisions");
+  }
+  const targetIndex = manifest.targets.findIndex(({ name }) => name === targetName);
+  if (targetIndex < 0 || manifest.targets[targetIndex].state !== "review-ready" || !manifest.targets[targetIndex].review) {
+    throw new Error("Learning target is not ready for a decision");
+  }
+  const target = manifest.targets[targetIndex];
+  const currentHead = await git(await realpath(target.repository), "rev-parse", "HEAD");
+  if (currentHead !== target.baseCommit) {
+    manifest.targets[targetIndex] = {
+      ...target,
+      state: "stale",
+      review: null,
+      stale: { detectedAt: decidedAt, expectedBaseCommit: target.baseCommit, currentHead },
+    };
+    await publishManifest(manifestPath, manifest);
+    throw new Error(`Learning target ${targetName} is stale because canonical HEAD changed`);
+  }
+  const decision = {
+    outcome: "rejected",
+    decidedAt,
+    reason: reason.trim(),
+    identity: structuredClone(target.review.identity),
+    resultCommit: null,
+  };
+  manifest.targets[targetIndex] = {
+    ...target,
+    state: "rejected",
+    review: { ...target.review, reviewedAt: decidedAt },
+    decision,
+  };
+  await publishManifest(manifestPath, manifest);
+  return structuredClone(manifest.targets[targetIndex]);
+}
+
 export async function restartStaleLearningTargetExtraction({ root, proposalId, targetName, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
   if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
     throw new Error("invalid Learning re-extraction request");
