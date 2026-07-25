@@ -65,6 +65,7 @@ SESSION="fm-lab-herdr-e2e-$$"
 export HERDR_SESSION="$SESSION"
 WT1=; WT2=
 cleanup_all() {
+  trap - EXIT
   [ -n "$WT1" ] && command -v treehouse >/dev/null 2>&1 && treehouse return --force "$WT1" >/dev/null 2>&1
   [ -n "$WT2" ] && command -v treehouse >/dev/null 2>&1 && treehouse return --force "$WT2" >/dev/null 2>&1
   herdr_safe_stop_and_delete "$SESSION"
@@ -80,12 +81,14 @@ fm_backend_source herdr || fail "fm_backend_source herdr failed"
 # --- scratch world: a primary-shaped home, a secondmate-shaped home, two projects ---
 
 PRIMARY_HOME="$TMP_ROOT/primary-home"
-mkdir -p "$PRIMARY_HOME/state" "$PRIMARY_HOME/data/cm1" "$PRIMARY_HOME/config"
+mkdir -p "$PRIMARY_HOME/state" "$PRIMARY_HOME/data/cm1" "$PRIMARY_HOME/config" "$PRIMARY_HOME/projects"
 printf 'trivial e2e primary crewmate brief: nothing to do.\n' > "$PRIMARY_HOME/data/cm1/brief.md"
+printf '%s\n' '- scratch-project-1 [local-only] - real Herdr E2E fixture' > "$PRIMARY_HOME/data/projects.md"
 
 SM_HOME="$TMP_ROOT/secondmate-home"
 mkdir -p "$SM_HOME/state" "$SM_HOME/data/cm2" "$SM_HOME/config" "$SM_HOME/projects" "$SM_HOME/bin"
 printf '# scratch secondmate home AGENTS.md placeholder\n' > "$SM_HOME/AGENTS.md"
+printf '%s\n' '- scratch-project-2 [local-only] - real Herdr E2E fixture' > "$SM_HOME/data/projects.md"
 printf 'e2esm1\n' > "$SM_HOME/.fm-secondmate-home"
 printf 'trivial e2e secondmate charter: nothing to do.\n' > "$SM_HOME/data/charter.md"
 printf 'trivial e2e secondmate-owned crewmate brief: nothing to do.\n' > "$SM_HOME/data/cm2/brief.md"
@@ -99,8 +102,8 @@ make_scratch_project() {  # <dir>
   git -C "$dir" -c user.name='Firstmate Tests' -c user.email='tests@example.invalid' commit -qm initial
 }
 
-PROJ1="$TMP_ROOT/scratch-project-1"; make_scratch_project "$PROJ1"
-PROJ2="$TMP_ROOT/scratch-project-2"; make_scratch_project "$PROJ2"
+PROJ1="$PRIMARY_HOME/projects/scratch-project-1"; make_scratch_project "$PROJ1"
+PROJ2="$SM_HOME/projects/scratch-project-2"; make_scratch_project "$PROJ2"
 
 # --- 1. primary-shaped home: a crewmate spawns into the "firstmate" space ---
 
