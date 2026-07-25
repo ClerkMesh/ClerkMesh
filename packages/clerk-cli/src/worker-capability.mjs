@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { appendFile, lstat, mkdir, realpath } from "node:fs/promises";
-import { basename, isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { readExecutionContextFromBrief } from "./execution-context-reader.mjs";
 
@@ -39,10 +39,23 @@ async function capabilityAuditPath(stateRoot, contextSha256) {
 }
 
 /** Create bounded Worker list/search/read operations over one immutable Clerk snapshot. */
-export async function createWorkerCapability({ briefPath, repositoryPath, stateRoot, now = () => new Date() }) {
-  const root = resolve(repositoryPath);
+export async function createWorkerCapability({ briefPath, clerksRoot, stateRoot, now = () => new Date() }) {
   const { context, sha256 } = await readExecutionContextFromBrief(briefPath);
-  if (basename(root) !== context.clerk.name) throw publicError("Clerk repository does not match execution context");
+  if (typeof clerksRoot !== "string" || !isAbsolute(clerksRoot)) throw publicError("canonical Clerks root is required");
+  let canonicalClerks;
+  try {
+    if ((await lstat(clerksRoot)).isSymbolicLink()) throw new Error("symlink");
+    canonicalClerks = await realpath(clerksRoot);
+  } catch {
+    throw publicError("canonical Clerks root is unavailable");
+  }
+  if (canonicalClerks !== resolve(clerksRoot)) throw publicError("Clerks root is not canonical");
+  const root = join(canonicalClerks, context.clerk.name);
+  try {
+    if ((await lstat(root)).isSymbolicLink() || await realpath(root) !== root) throw new Error("unsafe");
+  } catch {
+    throw publicError("approved Clerk repository is unavailable or unsafe");
+  }
   const auditPath = await capabilityAuditPath(stateRoot, sha256);
   const entries = new Map(context.allowlist.map((entry) => [entry.path, entry]));
 

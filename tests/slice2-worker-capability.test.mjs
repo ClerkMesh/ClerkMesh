@@ -9,7 +9,10 @@ import { createWorkerCapability } from "../packages/clerk-cli/src/worker-capabil
 
 const exec = promisify(execFile);
 const root = await mkdtemp(join(tmpdir(), "clerkmesh-capability-"));
-const repositoryPath = join(root, "review-clerk");
+const clerksPath = join(root, "clerks");
+await mkdir(clerksPath);
+const clerksRoot = await realpath(clerksPath);
+const repositoryPath = join(clerksRoot, "review-clerk");
 await mkdir(join(repositoryPath, "knowledge"), { recursive: true });
 const materialPath = "knowledge/review-guide.md";
 const approved = "---\nname: review-guide\ndescription: Review facts.\n---\nAlpha evidence\nBeta boundary\n";
@@ -33,7 +36,7 @@ const stateRootPath = join(root, "state");
 await mkdir(stateRootPath);
 const stateRoot = await realpath(stateRootPath);
 const auditPath = join(stateRoot, "capabilities", `${encoded.sha256}.jsonl`);
-const capability = await createWorkerCapability({ briefPath, repositoryPath, stateRoot, now: () => new Date("2026-01-02T03:04:05Z") });
+const capability = await createWorkerCapability({ briefPath, clerksRoot, stateRoot, now: () => new Date("2026-01-02T03:04:05Z") });
 assert.deepEqual(await capability.list(), context.allowlist);
 assert.equal(await capability.read(materialPath), approved);
 assert.deepEqual(await capability.search("beta"), [{ path: materialPath, line: 6, text: "Beta boundary" }]);
@@ -50,17 +53,23 @@ assert(audit.some((event) => event.path === "sources/private.md" && event.outcom
 assert(audit.some((event) => event.path === "../secret" && event.outcome === "refused"));
 assert(audit.every((event) => event.contextSha256 === encoded.sha256 && !JSON.stringify(event).includes("SECRET")));
 
-const wrongRoot = join(root, "wrong-clerk");
-await mkdir(wrongRoot);
-await assert.rejects(createWorkerCapability({ briefPath, repositoryPath: wrongRoot, stateRoot }), /does not match/);
-await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: "relative-state" }), (error) => error.code === "CAPABILITY_REFUSED");
+const cli = join(process.cwd(), "packages/clerk-cli/bin/clerk-capability.sh");
+const cliEnv = { ...process.env, CLERKMESH_CLERKS: clerksRoot, CLERKMESH_STATE: stateRoot };
+const listed = await exec(cli, ["--brief", briefPath, "list"], { env: cliEnv });
+assert.match(listed.stdout, new RegExp(`^${materialPath}\\treview-guide\\tReview facts\\.\\t${blobOid}\\n$`));
+const read = await exec(cli, ["--brief", briefPath, "read", materialPath], { env: cliEnv });
+assert.equal(read.stdout, approved);
+await assert.rejects(exec(cli, ["--brief", briefPath, "read", "sources/private.md"], { env: cliEnv }), (error) => error.code === 1 && error.stdout === "" && /not in the execution-context allowlist/.test(error.stderr));
+
+await assert.rejects(createWorkerCapability({ briefPath, clerksRoot: "relative-clerks", stateRoot }), (error) => error.code === "CAPABILITY_REFUSED");
+await assert.rejects(createWorkerCapability({ briefPath, clerksRoot, stateRoot: "relative-state" }), (error) => error.code === "CAPABILITY_REFUSED");
 const externalState = join(root, "external-state");
 const linkedState = join(root, "linked-state");
 await mkdir(externalState);
 await symlink(externalState, linkedState);
-await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: linkedState }), (error) => error.code === "CAPABILITY_REFUSED");
+await assert.rejects(createWorkerCapability({ briefPath, clerksRoot, stateRoot: linkedState }), (error) => error.code === "CAPABILITY_REFUSED");
 const unsafeState = join(root, "unsafe-state");
 await mkdir(unsafeState);
 await symlink(externalState, join(unsafeState, "capabilities"));
-await assert.rejects(createWorkerCapability({ briefPath, repositoryPath, stateRoot: unsafeState }), (error) => error.code === "CAPABILITY_REFUSED");
-console.log("ok - immutable audited Worker capability operations with canonical state containment");
+await assert.rejects(createWorkerCapability({ briefPath, clerksRoot, stateRoot: unsafeState }), (error) => error.code === "CAPABILITY_REFUSED");
+console.log("ok - immutable audited Worker capability CLI with canonical Clerk and state containment");
