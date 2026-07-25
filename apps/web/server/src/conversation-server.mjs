@@ -11,6 +11,8 @@ import { registerConversationClientAssets } from "./conversation-client-assets.m
 
 const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sessions.v1.schema.json", import.meta.url);
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
+const clerkCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/clerk-catalog.v1.schema.json", import.meta.url);
+const clerkCatalogSchema = JSON.parse(await readFile(clerkCatalogSchemaUrl, "utf8"));
 const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function isLoopbackAuthority(value, scheme = "http:") {
@@ -40,7 +42,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, writeCoordinator, writeLease, eventProjection, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -52,6 +54,10 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   addFormats(ajv);
   const validateCatalog = ajv.compile(catalogSchema);
+  const validateClerkCatalog = ajv.compile(clerkCatalogSchema);
+  if (clerkCatalog !== undefined && typeof clerkCatalog !== "function") {
+    throw new TypeError("clerkCatalog must be a function");
+  }
   const app = Fastify({ logger, ajv: { customOptions: { removeAdditional: false } } });
 
   // ClerkMesh V1 is a loopback product, not a LAN service. Reject DNS rebinding
@@ -79,6 +85,18 @@ export function createConversationServer({ firstmateRoot, listSessions, writeCoo
       return reply.code(503).send({ error: "Pi session catalog is unavailable." });
     }
   });
+
+  if (clerkCatalog !== undefined) {
+    app.get("/api/clerks", async (_request, reply) => {
+      try {
+        const projection = await clerkCatalog();
+        if (!validateClerkCatalog(projection)) throw new Error("invalid Clerk catalog projection");
+        return projection;
+      } catch {
+        return reply.code(503).send({ error: "Clerk catalog is unavailable." });
+      }
+    });
+  }
 
   if ((writeCoordinator === undefined) !== (writeLease === undefined)) {
     throw new TypeError("writeCoordinator and writeLease must be provided together");

@@ -1,4 +1,6 @@
-import { firstmateHome, spawnPrimary } from "../../../../packages/shared/src/primary-launch.mjs";
+import { resolve } from "node:path";
+import { clerkmeshRoot, firstmateHome, spawnPrimary } from "../../../../packages/shared/src/primary-launch.mjs";
+import { projectClerkCatalog } from "./clerk-catalog.mjs";
 import { ConversationEventProjection } from "./conversation-event-projection.mjs";
 import { createConversationServer } from "./conversation-server.mjs";
 import { buildConversationSessionCatalog } from "./conversation-session-catalog.mjs";
@@ -18,6 +20,9 @@ export function createConversationApplication({
   launchPrimary = spawnPrimary,
   logger = false,
   heartbeatIntervalMs,
+  registryPath = resolve(clerkmeshRoot, "clerkmesh-data/clerks.md"),
+  clerksRoot = resolve(clerkmeshRoot, "clerks"),
+  projectCatalog = projectClerkCatalog,
 } = {}) {
   const eventProjection = new ConversationEventProjection();
   const supervisor = createPiPrimarySupervisor({
@@ -43,6 +48,7 @@ export function createConversationApplication({
     writeCoordinator,
     writeLease,
     eventProjection,
+    clerkCatalog: () => projectCatalog({ registryPath, clerksRoot }),
     logger,
     ...(heartbeatIntervalMs === undefined ? {} : { heartbeatIntervalMs }),
   });
