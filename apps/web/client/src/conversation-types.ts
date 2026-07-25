@@ -12,3 +12,18 @@ export interface ConversationSessionCatalog {
   sessions: ConversationSessionSummary[];
   errors: string[];
 }
+
+export type ConversationEventKind = "visible-message" | "stream-fragment" | "notification" | "error" | "primary-status" | "extension-ui" | "diagnostic";
+
+export interface ConversationEvent {
+  sequence: number;
+  kind: ConversationEventKind;
+  payload: Record<string, unknown>;
+}
+
+export interface ConversationEventSnapshot {
+  schema: "clerkmesh.conversation-events.v1";
+  observedAt: string;
+  cursor: number;
+  events: ConversationEvent[];
+}
