@@ -80,7 +80,8 @@ A requirement is marked complete only when the linked commands and artifacts are
 | READ-004 | partial | `clerk-catalog.v1` explicitly carries observed time, `current|unknown` freshness, registry provenance, omissions, and errors; projection tests prove registry failure becomes path-free unknown/error state and invalid approved commits become explicit omissions. The Firstmate Task graph projector likewise emits provenance, freshness, duplicate/invalid-task omissions, inventory errors, safe result links, and no private paths or endpoint detail. | Remaining read models remain |
 | READ-005 | complete | `fm-task-graph.v1` projects a Clerk-agnostic Task boundary from Firstmate's authoritative fleet semantics. The guarded Web Task-detail endpoint queries that projection by Task ID and transiently enriches it only from the integrity-checked standard execution-context block in Firstmate's current brief, returning nullable immutable Clerk identity with explicit current-or-most-recent semantics and dual provenance; missing, malformed, mismatched, or symlinked briefs disclose no paths and never create ownership state | `test:slice2-clerk-repository` |
 | READ-001 | partial | `fm-task-graph.v1` and `fm-project-catalog.v1` have strict shared schemas and generated TypeScript interfaces; `test:slice3-project-catalog` proves the Project catalog projector emits a schema-valid union of registered, discovered, and missing Projects | Herdr Agent and activity interfaces remain |
-| PROJ-001 | partial | `test:slice3-project-catalog` proves Firstmate projects and `data/projects.md` remain authoritative while its read-only projector preserves registered/discovered/missing semantics, validates managed directories and Git roots, and exposes no filesystem paths or second registry | Real local Project lifecycle remains |
+| PROJ-001 | partial | `test:slice3-project-catalog` proves Firstmate projects and `data/projects.md` remain authoritative while its read-only projector preserves registered/discovered/missing semantics, validates managed directories and Git roots, and exposes no filesystem paths or second registry; the deterministic init command creates only beneath the managed Firstmate Project root and registers there last | Real spawn/delivery lifecycle remains |
+| PROJ-005 | partial | `test:slice3-project-catalog` proves deterministic local-only init creates `main`, a fixed README, a reproducible baseline commit, no remote, and publishes the Firstmate registry entry last; input/preflight refusals are zero-write and later failures retain a diagnosed managed path | Real lifecycle certification remains |
 
 ## Slice 2 compact requirement-to-test matrix
 
@@ -98,7 +99,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
-| S3-001 | PROJ-001, PROJ-002, PROJ-004–007, EXEC-012 | real local-only init → spawn → validate → review → approve → fast-forward → teardown | Project catalog schema and read-only Firstmate projector complete; deterministic init and complete delivery lifecycle remain |
+| S3-001 | PROJ-001, PROJ-002, PROJ-004–007, EXEC-012 | real local-only init → spawn → validate → review → approve → fast-forward → teardown | Project catalog and deterministic local-only init are complete; spawn and complete delivery lifecycle remain |
 | S3-002 | PROJ-007, SEC-005 | isolated landing refusal/approval matrix for yolo off/on and unsafe changes | Depends on complete local-only delivery path |
 | S3-003 | READ-001, READ-003–004, READ-006 | four schema-valid Firstmate projections with freshness/unknown/errors/cursors | Task graph and Project catalog projectors exist; Herdr Agents and activity remain |
 | S3-004 | READ-007–008, CERT-003 | genuine Herdr + Treehouse projection and two-second hash-change polling | Requires Herdr Agent projection and Web polling |
@@ -107,6 +108,8 @@ A requirement is marked complete only when the linked commands and artifacts are
 | S3-007 | PROJ-003–004, PROJ-008, COMP-002/005, CERT-006 | isolated direct-PR/no-mistakes regression plus local-only independence | Requires mode mutation/control-plane completion and remote fixture availability |
 
 Dependencies: Firstmate remains the sole Project/Task/delivery authority; Treehouse runtime certification is still outstanding; Web models must remain path-free and may not parse Firstmate private files.
+
+Current bounded init coverage: `test:slice3-project-catalog` proves valid inputs create a no-remote `main` repository with fixed README and deterministic baseline commit before atomically appending its `local-only` Firstmate registry entry. Invalid names, duplicate Projects, and malformed registry authority are refused before any Project write; post-creation failures retain and report the incomplete managed path.
 
 ## Stage status
 
