@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/fm-task-activity.v1.schema.json",
+  "title": "Firstmate Task activity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "taskId", "observedAt", "freshness", "provenance", "cursor", "events", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "fm-task-activity.v1" },
+    "taskId": { "$ref": "#/$defs/taskId" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "stale", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "source"],
+      "properties": {
+        "authority": { "const": "firstmate" },
+        "source": { "const": "structured-task-activity" }
+      }
+    },
+    "cursor": { "type": "integer", "minimum": 0 },
+    "events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "omitted": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/notice" } },
+    "errors": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/notice" } }
+  },
+  "$defs": {
+    "taskId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "nonempty": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cursor", "type", "observedAt", "occurredAt", "summary"],
+      "properties": {
+        "cursor": { "type": "integer", "minimum": 1 },
+        "type": { "enum": ["task-created", "dependency-changed", "dispatch-started", "worker-status-observed", "validation-recorded", "decision-requested", "decision-recorded", "delivery-reviewed", "landed", "teardown-recorded", "failed"] },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "occurredAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+        "summary": { "$ref": "#/$defs/nonempty" }
+      }
+    },
+    "notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": { "reason": { "$ref": "#/$defs/nonempty" } }
+    }
+  }
+}
