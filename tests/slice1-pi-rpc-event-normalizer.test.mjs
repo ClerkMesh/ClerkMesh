@@ -14,9 +14,10 @@ assert.deepEqual(normalizePiRpcEvent({ type: "agent_settled" }), { kind: "primar
 const ui = normalizePiRpcEvent({ type: "extension_ui_request", id: "1", method: "confirm", title: "Proceed?", apiKey: "oops" });
 assert.equal(ui.kind, "extension-ui");
 assert.equal(ui.payload.apiKey, "[REDACTED]");
-const tool = normalizePiRpcEvent({ type: "tool_execution_start", toolName: "bash", args: { authorization: "Bearer abc" } });
+const tool = normalizePiRpcEvent({ type: "tool_execution_start", toolName: "bash", args: { authorization: "Bearer abc" }, environment: { PATH: "/private/bin", MODEL_TOKEN: "oops" } });
 assert.equal(tool.kind, "diagnostic");
 assert.equal(tool.payload.args.authorization, "[REDACTED]");
+assert.equal(tool.payload.environment, "[REDACTED]", "diagnostics must not retain environment variable names or values");
 assert.deepEqual(normalizePiRpcEvent({ type: "unknown_future_event", token: "oops" }), {
   kind: "diagnostic", payload: { rpcType: "unknown_future_event" },
 });

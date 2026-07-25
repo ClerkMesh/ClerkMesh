@@ -29,6 +29,7 @@ export function App() {
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [diagnostics, setDiagnostics] = useState(false);
   const token = useMemo(clientToken, []);
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
@@ -36,7 +37,9 @@ export function App() {
   useEffect(() => { const update = () => setSelected(selectedSessionId()); window.addEventListener("popstate", update); return () => window.removeEventListener("popstate", update); }, []);
   useEffect(() => {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${location.host}/api/conversations/events?clientToken=${encodeURIComponent(token)}`);
+    const parameters = new URLSearchParams({ clientToken: token });
+    if (diagnostics) parameters.set("diagnostics", "true");
+    const ws = new WebSocket(`${protocol}//${location.host}/api/conversations/events?${parameters}`);
     setSocket(ws);
     ws.onopen = () => setConnected(true);
     ws.onclose = () => { setConnected(false); setWritable(false); };
@@ -52,7 +55,7 @@ export function App() {
       } catch { setError("A conversation update could not be read."); }
     };
     return () => ws.close();
-  }, [token]);
+  }, [token, diagnostics]);
 
   const active = catalog?.sessions.find((session) => session.id === selected) ?? null;
   async function send(event: FormEvent) {
@@ -65,5 +68,5 @@ export function App() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : "The Primary could not accept the message."); } finally { setSending(false); }
   }
 
-  return <main><header><span className="product">ClerkMesh</span><nav aria-label="Workspace"><strong>Conversations</strong></nav></header><div className="workspace"><aside aria-label="Conversations"><h1>Conversations</h1>{error && <p role="alert">{error}</p>}{!catalog && !error && <p>Loading history…</p>}{catalog?.sessions.map((session) => <SessionRow key={session.id} session={session} selected={session.id === selected} />)}{catalog?.sessions.length === 0 && <p>No conversations yet.</p>}</aside><section aria-live="polite">{active ? <><p className="crumb">Conversations / {active.name ?? "Untitled conversation"}</p><h2>{active.name ?? "Untitled conversation"}</h2><div className="timeline">{events.map((item) => <article key={item.sequence} className={`event ${item.kind}`}><small>{item.kind.replaceAll("-", " ")}</small><p>{eventText(item)}</p></article>)}{events.length === 0 && <p>Send a message to start or resume this conversation.</p>}</div><form onSubmit={send}><textarea aria-label="Message to Primary" value={message} onChange={(event) => setMessage(event.target.value)} disabled={!writable || sending} placeholder={writable ? "Message the Primary…" : "Read-only while another browser is writing"}/><div className="composer-row"><span>{connected ? writable ? "Writable" : "Read-only" : "Reconnecting…"}</span>{connected && !writable && <button type="button" onClick={() => socket?.send(JSON.stringify({ type: "claim-write" }))}>Claim write access</button>}<button type="submit" disabled={!writable || sending || !message.trim()}>{sending ? "Sending…" : "Send"}</button></div></form></> : <div className="empty"><h2>Select a conversation</h2><p>Browsing history does not start the Primary or call a model.</p></div>}</section></div></main>;
+  return <main><header><span className="product">ClerkMesh</span><nav aria-label="Workspace"><strong>Conversations</strong></nav></header><div className="workspace"><aside aria-label="Conversations"><h1>Conversations</h1>{error && <p role="alert">{error}</p>}{!catalog && !error && <p>Loading history…</p>}{catalog?.sessions.map((session) => <SessionRow key={session.id} session={session} selected={session.id === selected} />)}{catalog?.sessions.length === 0 && <p>No conversations yet.</p>}</aside><section aria-live="polite">{active ? <><p className="crumb">Conversations / {active.name ?? "Untitled conversation"}</p><h2>{active.name ?? "Untitled conversation"}</h2><div className="diagnostic-controls"><label><input type="checkbox" checked={diagnostics} onChange={(event) => setDiagnostics(event.target.checked)}/> Show diagnostics</label>{diagnostics && <p role="status" className="diagnostic-warning"><strong>Diagnostic mode is on.</strong> Reasoning, tool, and RPC details may contain sensitive operational information. Values are redacted, but review before sharing.</p>}</div><div className="timeline">{events.map((item) => <article key={item.sequence} className={`event ${item.kind}`}><small>{item.kind.replaceAll("-", " ")}</small>{item.kind === "diagnostic" ? <pre>{JSON.stringify(item.payload, null, 2)}</pre> : <p>{eventText(item)}</p>}</article>)}{events.length === 0 && <p>Send a message to start or resume this conversation.</p>}</div><form onSubmit={send}><textarea aria-label="Message to Primary" value={message} onChange={(event) => setMessage(event.target.value)} disabled={!writable || sending} placeholder={writable ? "Message the Primary…" : "Read-only while another browser is writing"}/><div className="composer-row"><span>{connected ? writable ? "Writable" : "Read-only" : "Reconnecting…"}</span>{connected && !writable && <button type="button" onClick={() => socket?.send(JSON.stringify({ type: "claim-write" }))}>Claim write access</button>}<button type="submit" disabled={!writable || sending || !message.trim()}>{sending ? "Sending…" : "Send"}</button></div></form></> : <div className="empty"><h2>Select a conversation</h2><p>Browsing history does not start the Primary or call a model.</p></div>}</section></div></main>;
 }

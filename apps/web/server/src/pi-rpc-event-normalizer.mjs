@@ -1,4 +1,5 @@
 const SENSITIVE_KEY = /(?:authorization|api[-_]?key|access[-_]?token|refresh[-_]?token|password|secret|credential)/i;
+const ENVIRONMENT_KEY = /^(?:env|environment|environmentVariables)$/i;
 const BEARER = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
 
 function redact(value, seen = new WeakSet()) {
@@ -9,7 +10,7 @@ function redact(value, seen = new WeakSet()) {
   if (Array.isArray(value)) return value.map((item) => redact(item, seen));
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [
     key,
-    SENSITIVE_KEY.test(key) ? "[REDACTED]" : redact(item, seen),
+    SENSITIVE_KEY.test(key) || ENVIRONMENT_KEY.test(key) ? "[REDACTED]" : redact(item, seen),
   ]));
 }
 
