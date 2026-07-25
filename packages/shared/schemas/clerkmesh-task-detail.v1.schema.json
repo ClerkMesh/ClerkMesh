@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/clerkmesh-task-detail.v1.schema.json",
+  "title": "ClerkMesh Task detail v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "freshness", "provenance", "task", "execution_clerk", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "clerkmesh-task-detail.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "stale", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskAuthority", "executionClerkAuthority"],
+      "properties": {
+        "taskAuthority": { "const": "firstmate" },
+        "executionClerkAuthority": { "const": "current-brief-execution-context" }
+      }
+    },
+    "task": { "$ref": "https://clerkmesh.local/schemas/fm-task-graph.v1.schema.json#/$defs/task" },
+    "execution_clerk": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "execution", "commit", "contextSha256", "relationship"],
+          "properties": {
+            "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+            "execution": { "enum": ["agent", "human"] },
+            "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "contextSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "relationship": { "const": "current-or-most-recent-execution" }
+          }
+        }
+      ]
+    },
+    "omitted": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/notice" } },
+    "errors": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/notice" } }
+  },
+  "$defs": {
+    "notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": { "reason": { "type": "string", "minLength": 1, "maxLength": 1000 } }
+    }
+  }
+}
