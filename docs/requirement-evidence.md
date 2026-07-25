@@ -94,7 +94,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 | PROJ-008 | partial | `test:slice3-project-catalog` proves target-mode readiness is checked before registry mutation, failed switches preserve authoritative bytes, successful switches preserve the orthogonal yolo setting, and existing Task metadata remains fixed to its spawn-time mode while the registry changes for future dispatch | Genuine remote-mode dispatch regression remains |
 
 | HUMAN-001 | partial | `test:slice4-human` freezes the injected Primary rule that a Human Clerk remains in the existing Firstmate Task/brief and creates no Worker, wake, endpoint, capability, worktree, parallel human record, or synthetic Agent status | Isolated end-to-end fixture evidence remains |
-| HUMAN-002 | partial | `test:slice4-human` requires visible Captain-relayed start/progress/questions/evidence/result, a Markdown Firstmate report with local Captain actor provenance, and acceptance-criteria evaluation without inferred completion | Deterministic report control plane and isolated conversation/report evidence remain |
+| HUMAN-002 | partial | `test:slice4-human` requires visible Captain-relayed start/progress/questions/evidence/result and proves the bounded Firstmate report command atomically publishes non-empty Markdown with fixed local Captain actor provenance plus explicit `accepted|rejected|incomplete` acceptance evaluation; invalid outcomes, empty results, unsafe Tasks, and symlinked reports fail without mutation | Isolated conversation/report evidence and genuine acceptance evaluation remain |
 | HUMAN-003 | partial | `test:slice4-human` requires Project, Git, shell, or tool changes to become a separate dependent Agent Task with a fresh Agent Clerk selection | Isolated dependency and selection evidence remains |
 | HUMAN-004 | partial | The protocol explicitly distinguishes the Captain as local relay rather than account or Clerk | Company/Work presentation and fixture evidence remain |
 
@@ -132,13 +132,13 @@ Current bounded local delivery coverage: `PATH="$PWD/cache/bin:$PATH" S3_001_LIV
 
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
-| S4-001 | HUMAN-001–002, OWN-001–003 | isolated Human Clerk Task from visible start through accepted Markdown report, proving absence of Worker/endpoint/capability/worktree and synthetic Agent state | Partial: Primary behavior contract frozen; deterministic report recording and fixture certification remain |
+| S4-001 | HUMAN-001–002, OWN-001–003 | isolated Human Clerk Task from visible start through accepted Markdown report, proving absence of Worker/endpoint/capability/worktree and synthetic Agent state | Partial: Primary behavior contract and atomic provenance-bearing report publication pass; isolated conversation, acceptance, and negative-runtime fixture certification remain |
 | S4-002 | HUMAN-001, HUMAN-004, CLERK-004, EXEC-005–006 | ordinary human selection plus explicit Captain-takeover Escalation transcript | Partial: selection rules and genuine explicit Escalation evidence exist; ordinary human end-to-end evidence remains |
 | S4-003 | HUMAN-003, EXEC-004, READ-005 | accepted human result followed by a dependent Agent Task and fresh Clerk selection | Partial: behavior contract frozen; dependency/control-plane and projection evidence remain |
 | S4-004 | HUMAN-001–004, AUTO-005–006 | isolated implementation-Agent-as-test-Captain success, refusal, and restart fixtures retaining conversation, report, projections, and negative Worker evidence | Not run; depends on the Human execution control plane and read presentation |
 | S4-005 | PLAN-003, AUTO-005 | complete engineering evidence and tracked `awaiting-final-captain-uat` marker | Not met; depends on S4-001 through S4-004 |
 
-Dependencies: Firstmate remains the only Task, brief, report, dependency, and delivery authority; Pi Session remains conversation authority; the Clerk approved commit and execution mode remain Clerk Git authority. Human execution must not invoke Herdr, Treehouse, Worker capabilities, or manufacture runtime facts. The existing S2-007 genuine Escalation evidence is reusable only for explicit-takeover selection, not as proof of the ordinary Human Clerk lifecycle.
+Dependencies: Firstmate remains the only Task, brief, report, dependency, and delivery authority; Pi Session remains conversation authority; the Clerk approved commit and execution mode remain Clerk Git authority. Human execution must not invoke Herdr, Treehouse, Worker capabilities, or manufacture runtime facts. The bounded `fm-human-report.sh` writes only the existing Task's `report.md` from Captain-relayed Markdown and records Primary's explicit acceptance evaluation; it does not infer acceptance or create runtime state. The existing S2-007 genuine Escalation evidence is reusable only for explicit-takeover selection, not as proof of the ordinary Human Clerk lifecycle.
 
 ## Stage status
 
