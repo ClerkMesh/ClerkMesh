@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/fm-project-catalog.v1.schema.json",
+  "title": "Firstmate project catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "freshness", "provenance", "projects", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "fm-project-catalog.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "stale", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority"],
+      "properties": { "authority": { "const": "firstmate" } }
+    },
+    "projects": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/project" }
+    },
+    "omitted": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "#/$defs/notice" }
+    }
+  },
+  "$defs": {
+    "projectId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "nonempty": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "registration", "present", "git", "remote", "delivery"],
+      "properties": {
+        "id": { "$ref": "#/$defs/projectId" },
+        "name": { "$ref": "#/$defs/nonempty" },
+        "registration": { "enum": ["registered", "discovered", "missing"] },
+        "present": { "type": "boolean" },
+        "git": { "type": "boolean" },
+        "remote": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "uri", "maxLength": 2048 }] },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "yolo"],
+          "properties": {
+            "mode": { "enum": ["local-only", "direct-PR", "no-mistakes", "unknown"] },
+            "yolo": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/projectId" },
+        "reason": { "$ref": "#/$defs/nonempty" }
+      }
+    }
+  }
+}
