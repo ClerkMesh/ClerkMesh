@@ -317,6 +317,51 @@ export async function restartStaleLearningTargetExtraction({ root, proposalId, t
   }
 }
 
+export async function reconcileLearningExtraction({ root, proposalId, sourceDirectory, learningRunsRoot, inspectTarget, reconciledAt }) {
+  if (!SHA256.test(proposalId ?? "") || typeof inspectTarget !== "function" || !Number.isFinite(Date.parse(reconciledAt ?? ""))) {
+    throw new Error("invalid Learning reconciliation request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  let manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "extracting") {
+    throw new Error("Learning Proposal is not extracting");
+  }
+
+  const observations = [];
+  for (const target of manifest.targets) {
+    if (target.state !== "extracting") continue;
+    const endpoint = JSON.parse(await readFile(path.join(path.resolve(learningRunsRoot), proposalId, `${target.name}.json`), "utf8"));
+    if (endpoint.schema !== "clerkmesh.learning-run-endpoint.v1" || endpoint.proposalId !== proposalId || endpoint.target !== target.name) {
+      throw new Error(`invalid Learning endpoint for ${target.name}`);
+    }
+    const state = await inspectTarget(structuredClone(endpoint));
+    if (!["live", "complete", "interrupted", "failed"].includes(state)) throw new Error(`invalid Learning runtime observation for ${target.name}`);
+    observations.push({ name: target.name, state });
+  }
+
+  // Materialize successful output before recording cleanup-safe terminal facts.
+  for (const observation of observations.filter(({ state }) => state === "complete")) {
+    try {
+      await prepareLearningTargetReview({ root, proposalId, targetName: observation.name, sourceDirectory, preparedAt: reconciledAt });
+    } catch {
+      observation.state = "failed";
+    }
+  }
+  manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.targets = manifest.targets.map((target) => {
+    const observation = observations.find(({ name }) => name === target.name);
+    if (!observation || observation.state === "complete") return target;
+    if (observation.state === "live") return { ...target, state: "extracting", reconciledAt };
+    return { ...target, state: observation.state, review: null, reconciledAt };
+  });
+  if (manifest.targets.some(({ state }) => state === "failed")) manifest.state = "failed";
+  else if (manifest.targets.some(({ state }) => state === "interrupted")) manifest.state = "interrupted";
+  manifest.reconciledAt = reconciledAt;
+  await publishManifest(manifestPath, manifest);
+  return structuredClone(manifest);
+}
+
 export async function startLearningExtraction({ root, proposalId, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
   if (!SHA256.test(proposalId ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
     throw new Error("invalid Learning extraction launch request");

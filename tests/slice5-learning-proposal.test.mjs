@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { approveLearningTarget, createLearningProposal, prepareLearningTargetReview, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { approveLearningTarget, createLearningProposal, prepareLearningTargetReview, reconcileLearningExtraction, rejectLearningTarget, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
@@ -242,6 +242,46 @@ try {
   assert.equal(resolvedManifest.resolvedAt, "2026-03-01T00:09:30.000Z");
   assert.deepEqual(resolvedManifest.targets.map(({ state }) => state), ["approved", "rejected"]);
   await assert.rejects(approveLearningTarget({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", decidedAt: "2026-03-01T00:09:40.000Z" }), /not accepting decisions/);
+
+  const gamma = await repository("gamma");
+  const delta = await repository("delta");
+  const recovery = await createLearningProposal({
+    root: proposalRoot,
+    sourceDirectory: path.join(sourceRoot, source.id),
+    createdAt: "2026-03-01T00:10:00.000Z",
+    targets: [
+      { name: "gamma", repository: gamma, status: "active", execution: "agent" },
+      { name: "delta", repository: delta, status: "active", execution: "agent" },
+    ],
+  });
+  await startLearningExtraction({
+    root: proposalRoot,
+    proposalId: recovery.id,
+    sourceDirectory: path.join(sourceRoot, source.id),
+    learningRunsRoot,
+    startedAt: "2026-03-01T00:11:00.000Z",
+    launchTarget: async ({ target }) => ({ backend: "herdr", session: "recovery", workspaceId: "recovery-workspace", tabId: `tab-${target}`, paneId: `pane-${target}` }),
+  });
+  await writeFile(path.join(proposalRoot, recovery.id, recovery.targets[0].candidate, "RECOVERED.md"), "complete before restart\n");
+  const inspected = [];
+  const reconciled = await reconcileLearningExtraction({
+    root: proposalRoot,
+    proposalId: recovery.id,
+    sourceDirectory: path.join(sourceRoot, source.id),
+    learningRunsRoot,
+    reconciledAt: "2026-03-01T00:12:00.000Z",
+    inspectTarget: async (endpoint) => {
+      inspected.push(endpoint.target);
+      return endpoint.target === "gamma" ? "complete" : "interrupted";
+    },
+  });
+  assert.deepEqual(inspected, ["gamma", "delta"]);
+  assert.equal(reconciled.state, "interrupted");
+  assert.deepEqual(reconciled.targets.map(({ state }) => state), ["review-ready", "interrupted"]);
+  assert.deepEqual(reconciled.targets[0].review.changedPaths, ["RECOVERED.md"]);
+  assert.equal(reconciled.targets[1].review, null);
+  assert.equal(reconciled.targets.every(({ decision }) => decision === undefined), true, "restart reconciliation invented a Captain decision");
+  await assert.rejects(reconcileLearningExtraction({ root: proposalRoot, proposalId: recovery.id, sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, reconciledAt: "2026-03-01T00:13:00.000Z", inspectTarget: async () => "live" }), /not extracting/);
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);
