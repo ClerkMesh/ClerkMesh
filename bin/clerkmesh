@@ -193,6 +193,12 @@ launch_gate0_web() {
   exec node "$CLERKMESH_ROOT/apps/web/server/gate0-cert-server.mjs"
 }
 
+import_learning_source() {
+  require_initialized
+  shift
+  exec node "$CLERKMESH_ROOT/packages/learning-core/src/learning-source-import-cli.mjs" "$@"
+}
+
 case "${1:-}" in
   init)
     [ "$#" -eq 1 ] || fatal "usage: clerkmesh init"
@@ -211,5 +217,10 @@ case "${1:-}" in
       fatal "usage: clerkmesh web [--gate0-cert]"
     fi
     ;;
-  *) fatal "usage: clerkmesh init | primary --tui | web [--gate0-cert]" ;;
+  learning-source)
+    [ "${2:-}" = import ] || fatal "usage: clerkmesh learning-source import [--agent-generated] FILE"
+    shift
+    import_learning_source "$@"
+    ;;
+  *) fatal "usage: clerkmesh init | primary --tui | web [--gate0-cert] | learning-source import [--agent-generated] FILE" ;;
 esac

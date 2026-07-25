@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { chmod, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
 
 const root = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-learning-source-"));
@@ -36,4 +38,23 @@ await assert.rejects(captureLearningSource({ root, origin: "unknown", content: "
 await chmod(path.join(root, imported.id, "source.md"), 0o600);
 await writeFile(path.join(root, imported.id, "source.md"), "tampered\n");
 await assert.rejects(captureLearningSource({ root, origin: "explicit_import", content: "# Captain evidence\n", capturedAt }), /collision/);
+
+const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cli = path.join(repository, "packages/learning-core/src/learning-source-import-cli.mjs");
+const cliState = path.join(root, "cli-state");
+const input = path.join(root, "captain-import.md");
+await writeFile(input, "# Explicit CLI import\n");
+const cliManifest = JSON.parse(execFileSync(process.execPath, [cli, input], { encoding: "utf8", env: { ...process.env, CLERKMESH_STATE: cliState } }));
+assert.equal(cliManifest.provenance.origin, "explicit_import");
+assert.equal(await readFile(path.join(cliState, "learning-sources", cliManifest.id, "source.md"), "utf8"), "# Explicit CLI import\n");
+const agentManifest = JSON.parse(execFileSync(process.execPath, [cli, "--agent-generated", input], { encoding: "utf8", env: { ...process.env, CLERKMESH_STATE: cliState } }));
+assert.equal(agentManifest.provenance.agentGenerated, true);
+assert.match(agentManifest.provenance.warning, /agent-generated/);
+
+const link = path.join(root, "source-link.md");
+await symlink(input, link);
+assert.throws(
+  () => execFileSync(process.execPath, [cli, link], { stdio: "pipe", env: { ...process.env, CLERKMESH_STATE: cliState } }),
+  (error) => error.status === 1 && error.stderr.toString().includes("not a symlink"),
+);
 console.log("ok - explicit immutable Learning Source capture rejects automatic learning paths");
