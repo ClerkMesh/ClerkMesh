@@ -271,7 +271,17 @@ command_hold() {
   tasks_axi hold "$id" --reason "$reason" --kind captain >/dev/null \
     || fail "could not activate captain hold $id"
   verify_hold_active "$id"
+  record_decision_requested_activity "$origin" "$key"
   printf '%s\n' "$id"
+}
+
+record_decision_requested_activity() {  # <origin-task> <decision-key>
+  local origin=$1 key=$2 activity="$DATA/$1/activity.jsonl" summary="Captain decision $2 requested"
+  if [ -f "$activity" ] && grep -F '"type":"decision-requested"' "$activity" | grep -Fq "\"summary\":\"$summary\""; then
+    return 0
+  fi
+  "$SCRIPT_DIR/fm-task-activity-append.sh" --task "$origin" --type decision-requested --summary "$summary" >/dev/null \
+    || fail "captain decision was requested but Task activity could not be recorded"
 }
 
 command_complete() {
