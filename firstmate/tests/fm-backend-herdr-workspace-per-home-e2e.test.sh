@@ -132,6 +132,15 @@ CM1_WS_LABEL=$(herdr workspace list --session "$SESSION" 2>&1 | jq -r --arg id "
 [ "$CM1_WS_LABEL" = "firstmate" ] || fail "a primary-shaped home's crewmate should land in the 'firstmate' workspace, got '$CM1_WS_LABEL'"
 pass "real herdr E2E: the primary-shaped home's crewmate landed in the 'firstmate' workspace"
 
+# Exercise the production, path-free read model against this genuine endpoint.
+CM1_PROJECTION=$(FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HOME/state" \
+  "$ROOT/bin/fm-herdr-agents.sh" --json) || fail "the Herdr Agent projection failed against the live cm1 endpoint"
+CM1_PROJECTED=$(printf '%s' "$CM1_PROJECTION" | jq -r '.agents[]? | select(.taskId == "cm1") | [.endpoint.exists, .agent.present] | @tsv')
+[ "$CM1_PROJECTED" = $'yes\tno' ] || fail "the genuine cm1 endpoint was not projected as an existing endpoint without an Agent: $CM1_PROJECTED"
+if printf '%s' "$CM1_PROJECTION" | grep -Eq 'herdr_pane_id|terminal|fm-cm1'; then
+  fail "the public Herdr projection leaked a private endpoint identifier or terminal field"
+fi
+
 # --- 2. the PRIMARY spawns a secondmate: its tab lands in the SECONDMATE's own space ---
 # (fm-spawn.sh's herdr case arm shadows FM_HOME to the secondmate's home for
 # exactly this call - AGENTS.md task herdr-sm-spaces-k4, requirement 3.)
@@ -151,6 +160,14 @@ assert_contains_local "$(cat "$SM_META")" "home=$SM_HOME" "e2esm1 meta does not 
 SM_PANE=$(grep '^herdr_pane_id=' "$SM_META" | cut -d= -f2-)
 [ -n "$SM_PANE" ] || fail "e2esm1 meta missing herdr_pane_id"
 pass "real herdr E2E: the primary spawns a --secondmate task on the herdr backend"
+
+TWO_ENDPOINT_PROJECTION=$(FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HOME/state" \
+  "$ROOT/bin/fm-herdr-agents.sh" --json) || fail "the Herdr Agent projection failed after the genuine runtime changed"
+[ "$(printf '%s' "$TWO_ENDPOINT_PROJECTION" | jq '[.agents[] | select(.endpoint.exists == "yes")] | length')" -eq 2 ] || \
+  fail "the changed genuine runtime was not reflected as two live endpoints"
+[ "$(printf '%s' "$CM1_PROJECTION" | jq -S 'del(.. | .observedAt?)' | shasum -a 256)" != "$(printf '%s' "$TWO_ENDPOINT_PROJECTION" | jq -S 'del(.. | .observedAt?)' | shasum -a 256)" ] || \
+  fail "a genuine endpoint fact change did not change the semantic projection hash"
+pass "real herdr E2E: the public projection reflects genuine endpoint changes while timestamp-only fields are excluded from its semantic hash"
 
 SM_WSID=$(herdr pane get "$SM_PANE" --session "$SESSION" 2>/dev/null | jq -r '.result.pane.workspace_id // empty')
 [ -n "$SM_WSID" ] || fail "could not read e2esm1's pane workspace_id"

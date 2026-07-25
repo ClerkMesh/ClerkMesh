@@ -25,10 +25,10 @@ Environment:
 - real Git repositories and linked worktrees
 - isolated Herdr session and disposable Firstmate homes
 
-Result: pass. The real `fm-spawn.sh` path acquired isolated Treehouse worktrees and created Herdr panes for a Primary-owned Worker, a secondmate, and a secondmate-owned Worker. Runtime discovery remained home-scoped. Real `fm-teardown.sh` closed only each selected Worker pane, returned its Treehouse worktree, and preserved the neighboring secondmate process.
+Result: pass. The real `fm-spawn.sh` path acquired isolated Treehouse worktrees and created Herdr panes for a Primary-owned Worker, a secondmate, and a secondmate-owned Worker. Runtime discovery remained home-scoped. The production `fm-herdr-agents.v1` command projected the genuine live endpoints without private endpoint or terminal fields, and adding the second endpoint changed the observation-independent semantic projection hash. Real `fm-teardown.sh` closed only each selected Worker pane, returned its Treehouse worktree, and preserved the neighboring secondmate process.
 
 The fixture now satisfies production's registered, managed, local-only Project preflight rather than bypassing it. Cleanup is idempotent so an early refusal cannot perform a second unverified destructive Herdr cleanup.
 
 ## Remaining boundary
 
-This run uses harmless raw shell launch commands. S3-001 still requires the genuine Pi Worker validation/review/approval/landing lifecycle, while CERT-003 still requires status, wake, follow-up, completion, and exit-recovery evidence. S3-004 additionally requires the versioned Herdr projection and hash-change polling.
+This run uses harmless raw shell launch commands. S3-001's genuine Pi Worker lifecycle is recorded separately. CERT-003 still requires status, wake, follow-up, completion, and exit-recovery evidence. S3-004 still requires a genuine timed Web polling run; this artifact now covers its real Herdr/Treehouse projection and semantic-change boundary.
