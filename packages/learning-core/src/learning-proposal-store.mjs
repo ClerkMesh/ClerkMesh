@@ -148,6 +148,70 @@ export async function prepareLearningTargetReview({ root, proposalId, targetName
   return structuredClone(review);
 }
 
+export async function restartStaleLearningTargetExtraction({ root, proposalId, targetName, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
+  if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
+    throw new Error("invalid Learning re-extraction request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "extracting") {
+    throw new Error("Learning Proposal is not extracting");
+  }
+  const targetIndex = manifest.targets.findIndex(({ name }) => name === targetName);
+  if (targetIndex < 0 || manifest.targets[targetIndex].state !== "stale") throw new Error("Learning target is not stale");
+  const target = manifest.targets[targetIndex];
+  const source = await realpath(sourceDirectory);
+  const sourceManifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
+  if (sourceManifest.id !== manifest.sourceId) throw new Error("Learning Proposal Source does not match");
+
+  const repository = await realpath(target.repository);
+  const baseCommit = await git(repository, "rev-parse", "HEAD");
+  if (!COMMIT.test(baseCommit)) throw new Error("Learning target canonical HEAD is invalid");
+  const attempt = (target.extractionAttempt ?? 1) + 1;
+  const candidateRelative = path.join("candidates", `${target.name}-attempt-${attempt}`);
+  const candidate = path.join(proposalDirectory, candidateRelative);
+  await execFileAsync("git", ["clone", "--quiet", "--no-hardlinks", "--no-checkout", repository, candidate]);
+  try {
+    await git(candidate, "checkout", "--quiet", "--detach", baseCommit);
+    let workspaceId;
+    try {
+      const previousEndpoint = JSON.parse(await readFile(path.join(path.resolve(learningRunsRoot), proposalId, `${target.name}.json`), "utf8"));
+      workspaceId = previousEndpoint.workspaceId;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    const endpoint = await launchTarget({ proposalId, target: target.name, candidateDirectory: candidate, sourceDirectory: source, workspaceId });
+    if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && value.length > 0)) {
+      throw new Error(`Learning target ${target.name} did not return an authoritative Herdr endpoint`);
+    }
+    if (workspaceId && endpoint.workspaceId !== workspaceId) throw new Error("Learning re-extraction must remain in the Proposal Herdr workspace");
+    const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint };
+    const runDirectory = path.join(path.resolve(learningRunsRoot), proposalId);
+    await mkdir(runDirectory, { recursive: true, mode: 0o700 });
+    const destination = path.join(runDirectory, `${target.name}.json`);
+    const temporary = `${destination}.${randomUUID()}.tmp`;
+    await writeFile(temporary, `${canonical(record)}\n`, { flag: "wx", mode: 0o600 });
+    await rename(temporary, destination);
+    manifest.targets[targetIndex] = {
+      ...target,
+      baseCommit,
+      candidate: candidateRelative,
+      state: "extracting",
+      review: null,
+      stale: null,
+      extractionAttempt: attempt,
+      reextractedAt: startedAt,
+    };
+    await publishManifest(manifestPath, manifest);
+    return { target: structuredClone(manifest.targets[targetIndex]), endpoint: structuredClone(record) };
+  } catch (error) {
+    // The candidate may identify a partially launched Agent, so retain it for
+    // reconciliation rather than deleting evidence after launch uncertainty.
+    throw error;
+  }
+}
+
 export async function startLearningExtraction({ root, proposalId, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
   if (!SHA256.test(proposalId ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
     throw new Error("invalid Learning extraction launch request");

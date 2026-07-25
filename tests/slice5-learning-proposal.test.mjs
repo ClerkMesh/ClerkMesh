@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal, prepareLearningTargetReview, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createLearningProposal, prepareLearningTargetReview, restartStaleLearningTargetExtraction, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
@@ -164,6 +164,34 @@ try {
     currentHead: advancedHead,
   });
   assert.equal(staleManifest.targets[1].state, "extracting");
+
+  const reExtractionLaunches = [];
+  const restarted = await restartStaleLearningTargetExtraction({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "alpha",
+    sourceDirectory: path.join(sourceRoot, source.id),
+    learningRunsRoot,
+    startedAt: "2026-03-01T00:08:00.000Z",
+    launchTarget: async (request) => {
+      reExtractionLaunches.push(request);
+      return { backend: "herdr", session: "isolated-learning", workspaceId: "learning-workspace", tabId: "tab-alpha-2", paneId: "pane-alpha-2" };
+    },
+  });
+  assert.equal(reExtractionLaunches[0].workspaceId, "learning-workspace");
+  assert.equal(restarted.target.baseCommit, advancedHead);
+  assert.equal(restarted.target.state, "extracting");
+  assert.equal(restarted.target.extractionAttempt, 2);
+  assert.equal(restarted.target.stale, null);
+  assert.equal(restarted.target.review, null);
+  assert.notEqual(restarted.target.candidate, proposal.targets[0].candidate);
+  assert.equal((await exec("git", ["-C", reExtractionLaunches[0].candidateDirectory, "rev-parse", "HEAD"])).stdout.trim(), advancedHead);
+  assert.equal(restarted.endpoint.tabId, "tab-alpha-2");
+  const restartedManifest = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
+  assert.deepEqual(restartedManifest.targets[0], restarted.target);
+  assert.equal(restartedManifest.targets[1].state, "extracting");
+  assert.deepEqual(JSON.parse(await readFile(path.join(learningRunsRoot, proposal.id, "alpha.json"), "utf8")), restarted.endpoint);
+  await assert.rejects(restartStaleLearningTargetExtraction({ root: proposalRoot, proposalId: proposal.id, targetName: "alpha", sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, startedAt: "2026-03-01T00:09:00.000Z", launchTarget: async () => ({}) }), /not stale/);
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);
