@@ -28,6 +28,17 @@ OUT=$("$ROOT/packages/clerk-cli/bin/clerk-restore.sh" review-clerk)
 [ "$OUT" = "review-clerk	active" ]
 cmp "$TMP/before" "$CLERKMESH_DATA/clerks.md"
 
+# Restart recovery completes a restore whose intent was durable before registry publication.
+perl -0pi -e 's/\| review-clerk \|([^\n]+)\| active \| false \|/| review-clerk |$1| archived | false |/' "$CLERKMESH_DATA/clerks.md"
+node --input-type=module - "$ROOT" "$CLERKMESH_STATE" <<'NODE'
+const { createJournalPath, writeRestoreJournal } = await import(`file://${process.argv[2]}/packages/clerk-cli/src/clerk-lifecycle-journal.mjs`);
+await writeRestoreJournal({ journalPath: createJournalPath(process.argv[3]), name: "review-clerk" });
+NODE
+OUT=$($ROOT/packages/clerk-cli/bin/clerk-restore.sh review-clerk)
+[ "$OUT" = "$(printf 'review-clerk\tactive')" ]
+grep -Fq "| review-clerk | $CLERKMESH_CLERKS/review-clerk | active | false |" "$CLERKMESH_DATA/clerks.md"
+[ ! -e "$CLERKMESH_STATE/clerk-lifecycle-journal.v1.json" ]
+
 if "$ROOT/packages/clerk-cli/bin/clerk-restore.sh" absent >"$TMP/out" 2>"$TMP/err"; then
   echo "unregistered Clerk unexpectedly restored" >&2; exit 1
 fi

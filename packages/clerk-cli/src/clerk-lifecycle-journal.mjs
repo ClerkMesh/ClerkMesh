@@ -29,6 +29,10 @@ export async function writeArchiveJournal({ journalPath, name }) {
   await writeLifecycleJournal({ journalPath, operation: "archive", name, destination: "archived" });
 }
 
+export async function writeRestoreJournal({ journalPath, name }) {
+  await writeLifecycleJournal({ journalPath, operation: "restore", name, destination: "active" });
+}
+
 export async function clearLifecycleJournal(journalPath) {
   await rm(journalPath, { force: true });
 }
@@ -42,24 +46,25 @@ export async function recoverLifecycleJournal({ journalPath, registryPath, clerk
   }
   let journal;
   try { journal = JSON.parse(raw); } catch { throw new Error("lifecycle journal is malformed"); }
-  if (journal?.version !== 1 || !["create", "register", "archive"].includes(journal.operation) || !NAME_PATTERN.test(journal.name ?? "") || typeof journal.destination !== "string") {
+  if (journal?.version !== 1 || !["create", "register", "archive", "restore"].includes(journal.operation) || !NAME_PATTERN.test(journal.name ?? "") || typeof journal.destination !== "string") {
     throw new Error("lifecycle journal has unsupported content");
   }
   const root = await realpath(resolve(clerksRoot));
   const records = await parseClerkRegistry({ registryPath, clerksRoot: root });
   const existing = records.find((record) => record.name === journal.name);
-  if (journal.operation === "archive") {
-    if (journal.destination !== "archived") throw new Error("lifecycle archive journal has unsupported target");
-    if (!existing || existing.builtIn) throw new Error("lifecycle archive journal conflicts with the registry");
-    if (existing.status === "active") {
+  if (["archive", "restore"].includes(journal.operation)) {
+    const targetStatus = journal.operation === "archive" ? "archived" : "active";
+    if (journal.destination !== targetStatus) throw new Error(`lifecycle ${journal.operation} journal has unsupported target`);
+    if (!existing || existing.builtIn) throw new Error(`lifecycle ${journal.operation} journal conflicts with the registry`);
+    if (existing.status !== targetStatus) {
       await publishClerkRegistryAtomic({
         registryPath,
         clerksRoot: root,
-        records: records.map((record) => record.name === journal.name ? { ...record, status: "archived" } : record),
+        records: records.map((record) => record.name === journal.name ? { ...record, status: targetStatus } : record),
       });
     }
     await clearLifecycleJournal(journalPath);
-    return { name: journal.name, status: "archived", operation: "archive" };
+    return { name: journal.name, status: targetStatus, operation: journal.operation };
   }
   const expected = join(root, journal.name);
   if (resolve(journal.destination) !== expected) throw new Error("lifecycle journal destination is outside the Clerk root");
