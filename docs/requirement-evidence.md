@@ -79,8 +79,8 @@ A requirement is marked complete only when the linked commands and artifacts are
 | READ-002 | partial | `clerkmesh.execution-context.v1` and `clerk-catalog.v1` have versioned shared schemas and reproducibly generated TypeScript interfaces | Catalog projector binding and remaining ClerkMesh read models remain |
 | READ-004 | partial | `clerk-catalog.v1` explicitly carries observed time, `current|unknown` freshness, registry provenance, omissions, and errors; projection tests prove registry failure becomes path-free unknown/error state and invalid approved commits become explicit omissions. The Firstmate Task graph projector likewise emits provenance, freshness, duplicate/invalid-task omissions, inventory errors, safe result links, and no private paths or endpoint detail. | Remaining read models remain |
 | READ-005 | complete | `fm-task-graph.v1` projects a Clerk-agnostic Task boundary from Firstmate's authoritative fleet semantics. The guarded Web Task-detail endpoint queries that projection by Task ID and transiently enriches it only from the integrity-checked standard execution-context block in Firstmate's current brief, returning nullable immutable Clerk identity with explicit current-or-most-recent semantics and dual provenance; missing, malformed, mismatched, or symlinked briefs disclose no paths and never create ownership state | `test:slice2-clerk-repository` |
-| READ-001 | partial | `fm-task-graph.v1` and the newly frozen, path-free `fm-project-catalog.v1` have strict shared schemas and generated TypeScript interfaces | Project catalog projection and the Herdr Agent/activity interfaces remain |
-| PROJ-001 | partial | `fm-project-catalog.v1` preserves Firstmate provenance and registered/discovered/missing semantics without exposing repository paths or creating a second registry | Firstmate projector and real local Project lifecycle remain |
+| READ-001 | partial | `fm-task-graph.v1` and `fm-project-catalog.v1` have strict shared schemas and generated TypeScript interfaces; `test:slice3-project-catalog` proves the Project catalog projector emits a schema-valid union of registered, discovered, and missing Projects | Herdr Agent and activity interfaces remain |
+| PROJ-001 | partial | `test:slice3-project-catalog` proves Firstmate projects and `data/projects.md` remain authoritative while its read-only projector preserves registered/discovered/missing semantics, validates managed directories and Git roots, and exposes no filesystem paths or second registry | Real local Project lifecycle remains |
 
 ## Slice 2 compact requirement-to-test matrix
 
@@ -98,9 +98,9 @@ A requirement is marked complete only when the linked commands and artifacts are
 
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
-| S3-001 | PROJ-001, PROJ-002, PROJ-004–007, EXEC-012 | real local-only init → spawn → validate → review → approve → fast-forward → teardown | Started: `fm-project-catalog.v1` interface frozen; deterministic init and complete delivery lifecycle remain |
+| S3-001 | PROJ-001, PROJ-002, PROJ-004–007, EXEC-012 | real local-only init → spawn → validate → review → approve → fast-forward → teardown | Project catalog schema and read-only Firstmate projector complete; deterministic init and complete delivery lifecycle remain |
 | S3-002 | PROJ-007, SEC-005 | isolated landing refusal/approval matrix for yolo off/on and unsafe changes | Depends on complete local-only delivery path |
-| S3-003 | READ-001, READ-003–004, READ-006 | four schema-valid Firstmate projections with freshness/unknown/errors/cursors | Task graph exists; Project catalog schema frozen; projector, Herdr Agents, and activity remain |
+| S3-003 | READ-001, READ-003–004, READ-006 | four schema-valid Firstmate projections with freshness/unknown/errors/cursors | Task graph and Project catalog projectors exist; Herdr Agents and activity remain |
 | S3-004 | READ-007–008, CERT-003 | genuine Herdr + Treehouse projection and two-second hash-change polling | Requires Herdr Agent projection and Web polling |
 | S3-005 | PROC-002, OWN-001, READ-008 | separate Web/Primary/Worker exit and authority recovery scenarios | Requires complete local execution/read models |
 | S3-006 | LIFE-003–004 | archive/restore lock, kill/restart journal, and CAS suite | Slice 2 evidence exists; repeat at Slice 3 boundary |
