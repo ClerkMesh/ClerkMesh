@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { captureLearningSource } from "../packages/learning-core/src/learning-source-store.mjs";
-import { createLearningProposal, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
+import { createLearningProposal, prepareLearningTargetReview, startLearningExtraction, validateLearningCandidate } from "../packages/learning-core/src/learning-proposal-store.mjs";
 import { createHerdrLearningLauncher } from "../packages/learning-core/src/herdr-learning-launcher.mjs";
 import { learningExtractionCommand } from "../packages/learning-core/src/learning-extraction-command.mjs";
 
@@ -109,6 +109,40 @@ try {
   assert.deepEqual(JSON.parse(await readFile(path.join(learningRunsRoot, proposal.id, "alpha.json"), "utf8")), extraction.endpoints[0]);
   assert.deepEqual(JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8")), extraction.manifest);
   await assert.rejects(startLearningExtraction({ root: proposalRoot, proposalId: proposal.id, sourceDirectory: path.join(sourceRoot, source.id), learningRunsRoot, startedAt: "2026-03-01T00:04:00.000Z", launchTarget: async () => ({}) }), /not pending/);
+
+  const firstReview = await prepareLearningTargetReview({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "alpha",
+    sourceDirectory: path.join(sourceRoot, source.id),
+    preparedAt: "2026-03-01T00:05:00.000Z",
+  });
+  assert.deepEqual(firstReview.source, { id: source.id, contentSha256: source.contentSha256, preview: "# Evidence\n" });
+  assert.deepEqual(firstReview.changedPaths, ["CANDIDATE.md"]);
+  assert.match(firstReview.fullDiff, /diff --git a\/CANDIDATE\.md b\/CANDIDATE\.md/);
+  assert.match(firstReview.fullDiff, /\+isolated/);
+  assert.deepEqual(firstReview.validation, { status: "passed", markdownOnly: true });
+  assert.equal(firstReview.identity.baseCommit, proposal.targets[0].baseCommit);
+  assert.match(firstReview.identity.candidateTree, /^[0-9a-f]{40,64}$/);
+  assert.equal(firstReview.reviewedAt, null);
+  assert.deepEqual(firstReview.warnings, []);
+
+  await writeFile(path.join(alphaCandidate, "CANDIDATE.md"), "revised\n");
+  const revisedReview = await prepareLearningTargetReview({
+    root: proposalRoot,
+    proposalId: proposal.id,
+    targetName: "alpha",
+    sourceDirectory: path.join(sourceRoot, source.id),
+    preparedAt: "2026-03-01T00:06:00.000Z",
+  });
+  assert.notEqual(revisedReview.identity.candidateTree, firstReview.identity.candidateTree);
+  assert.match(revisedReview.fullDiff, /\+revised/);
+  assert.doesNotMatch(revisedReview.fullDiff, /\+isolated/);
+  assert.equal(revisedReview.reviewedAt, null);
+  const reviewedManifest = JSON.parse(await readFile(path.join(proposalRoot, proposal.id, "manifest.json"), "utf8"));
+  assert.equal(reviewedManifest.targets[0].state, "review-ready");
+  assert.deepEqual(reviewedManifest.targets[0].review, revisedReview);
+  assert.equal(reviewedManifest.targets[1].state, "extracting");
 
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "active", execution: "agent" }, { name: "alpha", repository: beta, status: "active", execution: "agent" }] }), /distinct valid/);
   await assert.rejects(createLearningProposal({ root: proposalRoot, sourceDirectory: path.join(sourceRoot, source.id), createdAt: "2026-03-01T00:02:00Z", targets: [{ name: "alpha", repository: alpha, status: "archived", execution: "agent" }, { name: "beta", repository: beta, status: "active", execution: "agent" }] }), /active Agent/);

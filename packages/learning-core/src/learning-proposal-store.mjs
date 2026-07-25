@@ -26,6 +26,24 @@ async function git(cwd, ...args) {
   return stdout.trim();
 }
 
+async function publishManifest(manifestPath, manifest) {
+  const temporary = `${manifestPath}.${randomUUID()}.tmp`;
+  await writeFile(temporary, `${canonical(manifest)}\n`, { flag: "wx", mode: 0o600 });
+  await rename(temporary, manifestPath);
+}
+
+async function candidateTree(candidate, baseCommit) {
+  const index = path.join(candidate, `.learning-review-index-${randomUUID()}`);
+  try {
+    const env = { ...process.env, GIT_INDEX_FILE: index };
+    await execFileAsync("git", ["-C", candidate, "read-tree", baseCommit], { env });
+    await execFileAsync("git", ["-C", candidate, "add", "-A"], { env });
+    return (await execFileAsync("git", ["-C", candidate, "write-tree"], { env, encoding: "utf8" })).stdout.trim();
+  } finally {
+    await rm(index, { force: true });
+  }
+}
+
 /**
  * Fail closed unless every extraction-created change is a plain, non-executable
  * UTF-8 Markdown file (or the deletion of one). Baseline repository content is
@@ -75,6 +93,49 @@ export async function validateLearningCandidate({ candidateDirectory, baseCommit
  * Create the authoritative immutable-base manifest and isolated candidate clones
  * for a multi-target Learning Proposal. Extraction is launched separately.
  */
+/**
+ * Materialize the complete, target-specific Captain review from immutable Source
+ * and candidate bytes. Re-running after an edit creates a new tree identity and
+ * replaces (therefore invalidates) every field from the previous review.
+ */
+export async function prepareLearningTargetReview({ root, proposalId, targetName, sourceDirectory, preparedAt }) {
+  if (!SHA256.test(proposalId ?? "") || !NAME.test(targetName ?? "") || !Number.isFinite(Date.parse(preparedAt ?? ""))) {
+    throw new Error("invalid Learning review request");
+  }
+  const proposalDirectory = path.join(path.resolve(root), proposalId);
+  const manifestPath = path.join(proposalDirectory, "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== proposalId || manifest.state !== "extracting") {
+    throw new Error("Learning Proposal is not extracting");
+  }
+  const targetIndex = manifest.targets.findIndex(({ name }) => name === targetName);
+  if (targetIndex < 0 || !["extracting", "review-ready"].includes(manifest.targets[targetIndex].state)) throw new Error("Learning target cannot be reviewed");
+  const target = manifest.targets[targetIndex];
+  const source = await realpath(sourceDirectory);
+  const sourceManifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
+  const sourceBytes = await readFile(path.join(source, "source.md"));
+  if (sourceManifest.id !== manifest.sourceId || createHash("sha256").update(sourceBytes).digest("hex") !== sourceManifest.contentSha256) {
+    throw new Error("Learning Proposal Source does not match");
+  }
+  const candidate = path.join(proposalDirectory, target.candidate);
+  const validation = await validateLearningCandidate({ candidateDirectory: candidate, baseCommit: target.baseCommit });
+  const tree = await candidateTree(candidate, target.baseCommit);
+  const { stdout: fullDiff } = await execFileAsync("git", ["-C", candidate, "diff", "--no-ext-diff", "--full-index", target.baseCommit, tree, "--"], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  const review = {
+    preparedAt,
+    reviewedAt: null,
+    source: { id: sourceManifest.id, contentSha256: sourceManifest.contentSha256, preview: sourceBytes.toString("utf8") },
+    changedPaths: validation.changedPaths,
+    fullDiff,
+    validation: { status: "passed", markdownOnly: true },
+    identity: { baseCommit: target.baseCommit, candidateTree: tree },
+    warnings: sourceManifest.provenance?.warning ? [sourceManifest.provenance.warning] : [],
+  };
+  manifest.targets[targetIndex] = { ...target, state: "review-ready", review };
+  await publishManifest(manifestPath, manifest);
+  return structuredClone(review);
+}
+
 export async function startLearningExtraction({ root, proposalId, sourceDirectory, learningRunsRoot, launchTarget, startedAt }) {
   if (!SHA256.test(proposalId ?? "") || !Number.isFinite(Date.parse(startedAt ?? "")) || typeof launchTarget !== "function") {
     throw new Error("invalid Learning extraction launch request");
@@ -118,9 +179,7 @@ export async function startLearningExtraction({ root, proposalId, sourceDirector
     manifest.state = "extracting";
     manifest.startedAt = startedAt;
     manifest.targets = manifest.targets.map((target) => ({ ...target, state: "extracting" }));
-    const temporaryManifest = `${manifestPath}.${randomUUID()}.tmp`;
-    await writeFile(temporaryManifest, `${canonical(manifest)}\n`, { flag: "wx", mode: 0o600 });
-    await rename(temporaryManifest, manifestPath);
+    await publishManifest(manifestPath, manifest);
     return { manifest: structuredClone(manifest), endpoints: structuredClone(endpoints) };
   } catch (error) {
     // Persisted endpoint records deliberately survive partial launch so restart
