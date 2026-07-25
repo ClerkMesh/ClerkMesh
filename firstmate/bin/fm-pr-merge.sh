@@ -82,3 +82,11 @@ if ! caller_has_merge_method "$@"; then
 fi
 
 gh-axi pr merge "$PR_NUMBER" --repo "$PR_OWNER/$PR_REPO" "${merge_args[@]+"${merge_args[@]}"}" "$@"
+
+# A successful forge merge is the authoritative remote landing transition. Record
+# it only after gh-axi accepts the merge, and fail visibly if durable activity is
+# unavailable rather than presenting an unobservable success.
+if ! "$SCRIPT_DIR/fm-task-activity-append.sh" --task "$ID" --type landed --summary "Task PR merged through approved remote delivery" >/dev/null; then
+  echo "error: task $ID PR merged but structured activity recording failed" >&2
+  exit 1
+fi

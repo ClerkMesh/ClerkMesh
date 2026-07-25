@@ -29,7 +29,7 @@ make_case() {
   local name=$1 case_dir fakebin
   case_dir="$TMP_ROOT/$name"
   fakebin="$case_dir/fakebin"
-  mkdir -p "$case_dir/state" "$fakebin"
+  mkdir -p "$case_dir/state" "$case_dir/data/task-x1" "$fakebin"
   fm_write_meta "$case_dir/state/task-x1.meta" \
     "window=fm-task-x1" \
     "worktree=$case_dir/wt" \
@@ -87,6 +87,7 @@ SH
 run_pr_merge() {
   local case_dir=$1 rc; shift
   FM_ROOT_OVERRIDE="$ROOT" \
+  FM_HOME="$case_dir" \
   FM_STATE_OVERRIDE="$case_dir/state" \
   FM_TEST_GH_AXI_LOG="$case_dir/gh-axi.log" \
   PATH="$case_dir/fakebin:$PATH" \
@@ -119,7 +120,11 @@ test_records_pr_and_head_before_merging() {
     "records-before-merge: pr_head= was not recorded"
   grep -qxF 'pr merge 9 --repo example/repo --squash' "$case_dir/gh-axi.log" \
     || fail "records-before-merge: gh-axi pr merge was not invoked with number, --repo, and default --squash"
-  pass "fm-pr-merge records pr= and pr_head= before invoking gh-axi pr merge"
+  node -e '
+    const fs=require("fs"); const rows=fs.readFileSync(process.argv[1],"utf8").trim().split("\n").map(JSON.parse);
+    if(rows.length!==1 || rows[0].cursor!==1 || rows[0].type!=="landed" || rows[0].summary!=="Task PR merged through approved remote delivery") process.exit(1);
+  ' "$case_dir/data/task-x1/activity.jsonl" || fail "records-before-merge: successful remote merge did not append landed activity"
+  pass "fm-pr-merge records PR identity and durable landed activity around the authoritative merge"
 }
 
 test_merge_failure_propagates_after_recording() {
@@ -138,7 +143,9 @@ test_merge_failure_propagates_after_recording() {
   expect_code 1 "$rc" "merge-fails: fm-pr-merge should propagate the gh-axi merge failure"
   assert_grep 'pr=https://github.com/example/repo/pull/13' "$case_dir/state/task-x1.meta" \
     "merge-fails: pr= should already be recorded even though the merge itself failed"
-  pass "fm-pr-merge propagates a real merge failure without silently succeeding"
+  assert_absent "$case_dir/data/task-x1/activity.jsonl" \
+    "merge-fails: refused remote merge emitted false landed activity"
+  pass "fm-pr-merge propagates a real merge failure without false landed activity"
 }
 
 test_extra_merge_args_forwarded() {
