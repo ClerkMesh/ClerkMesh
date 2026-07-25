@@ -180,6 +180,14 @@ TWO_ENDPOINT_PROJECTION=$(FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HO
   fail "a genuine endpoint fact change did not change the semantic projection hash"
 pass "real herdr E2E: the public projection reflects genuine endpoint changes while timestamp-only fields are excluded from its semantic hash"
 
+if [ -n "${S3_005_RECOVERY_EVIDENCE_DIR:-}" ]; then
+  mkdir -p "$S3_005_RECOVERY_EVIDENCE_DIR"
+  FM_HOME="$PRIMARY_HOME" FM_STATE_OVERRIDE="$PRIMARY_HOME/state" \
+    node "$ROOT/../tests/cert/s3-005-real-web-worker-recovery.mjs" "$ROOT" \
+      "$S3_005_RECOVERY_EVIDENCE_DIR/result.json" || fail "production Web exit/restart did not recover the genuine Worker"
+  pass "real herdr E2E: genuine Worker survived Web exit and was recovered after restart"
+fi
+
 if [ -n "${S3_004_POLL_EVIDENCE_DIR:-}" ]; then
   for _ in $(seq 1 100); do [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] && break; sleep 0.1; done
   [ -f "$S3_004_POLL_EVIDENCE_DIR/ready" ] || fail "production Web poller did not observe the initial genuine endpoint"
