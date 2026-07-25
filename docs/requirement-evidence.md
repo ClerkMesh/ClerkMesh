@@ -100,6 +100,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 
 | LEARN-001 | partial | `test:slice5-learning` establishes the immutable content-addressed Source capture boundary: only explicit Captain import, accepted Human Task evidence, or explicit agent-generated re-import can persist; Agent completion/report/wake and extraction result origins fail before writes. Human provenance requires an accepted outcome and report hash, while explicit agent re-import is permanently warning-marked. | Proposal integration, production command/API binding, and genuine scenario evidence remain |
 | LEARN-002 | partial | `test:slice5-learning` preserves `agentGenerated: true` plus a visible caution on an explicit Captain re-import and rejects treating ordinary Agent events as that explicit action. | Reviews UI warning and genuine scenario evidence remain |
+| LEARN-003 | partial | `test:slice5-learning` creates one authoritative Proposal over two distinct active Agent Clerks, fixes each target independently to its canonical Git HEAD, and provisions a separate full candidate clone whose writes cannot alter either canonical Clerk repository. | Extraction, per-target review/decision state, and genuine runtime evidence remain |
 
 ## Slice 2 compact requirement-to-test matrix
 
@@ -148,7 +149,7 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 | Exit | Requirements | Planned proof | Dependencies / status |
 |---|---|---|---|
 | S5-001 | LEARN-001–002 | explicit immutable Source capture plus automatic-learning refusal matrix | **Complete:** production explicit imports and accepted Human reports create immutable Sources; warning and automatic-origin refusal matrices pass; the genuine-Pi isolated fixture verifies exact report bytes and task/hash/Captain provenance; `test:slice5-learning`, `test:slice4-human`, `cert:slice4-human-agent-handoff`; `evidence/slice-5/s5-001-learning-source-capture.md` |
-| S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | Not started |
+| S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | **In progress:** authoritative immutable-base two-target Proposal creation and filesystem/Git-isolated candidate clones pass; extraction launch, Markdown-only enforcement, Herdr endpoint authority, and owner-exit continuity remain |
 | S5-003 | LEARN-005 | complete review, revision invalidation, HEAD race stale, and re-extraction | Not started |
 | S5-004 | LEARN-006 | independent approve/reject with approved-target-only CAS commit | Not started |
 | S5-005 | LEARN-008 | restart reconciliation for live, complete, and interrupted runs | Not started |
