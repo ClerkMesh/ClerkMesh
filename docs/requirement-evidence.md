@@ -98,6 +98,9 @@ A requirement is marked complete only when the linked commands and artifacts are
 | HUMAN-003 | covered | `test:slice4-human` requires Project, Git, shell, or tool changes to preserve the accepted Human Task/report as dependency authority; actually create a separate Firstmate Agent Task through the pinned `tasks-axi` with `--blocked-by <human-task-id>`; verify the edge through Firstmate's Task projection; and restart candidates → shortlist → semantic Agent Clerk selection, Project preflight, and Agent context compilation before ordinary spawn. The isolated real-control-plane fixture proves a separate Agent Task is authoritatively blocked by the Human Task, the public graph exposes that exact edge, and a missing dependency is refused without backlog mutation. Any failed control-plane step stops before spawn, and prose or a parallel ClerkMesh dependency record is forbidden | `S4_003_LIVE=1 corepack pnpm run cert:slice4-human-agent-handoff`; tracked passing evidence: `evidence/slice-4/s4-003-human-agent-handoff.md` |
 | HUMAN-004 | complete | The protocol explicitly distinguishes the Captain as the local relay rather than an account or Clerk; report publication records only fixed local decision provenance; Work describes only the current-or-most-recent execution Clerk and contract coverage rejects owner or assignment language | Genuine ordinary Human and explicit Escalation fixtures introduce no User, owner, assignment, or permission semantics; `evidence/slice-4/s4-002-human-escalation-selection.md` |
 
+| LEARN-001 | partial | `test:slice5-learning` establishes the immutable content-addressed Source capture boundary: only explicit Captain import, accepted Human Task evidence, or explicit agent-generated re-import can persist; Agent completion/report/wake and extraction result origins fail before writes. Human provenance requires an accepted outcome and report hash, while explicit agent re-import is permanently warning-marked. | Proposal integration, production command/API binding, and genuine scenario evidence remain |
+| LEARN-002 | partial | `test:slice5-learning` preserves `agentGenerated: true` plus a visible caution on an explicit Captain re-import and rejects treating ordinary Agent events as that explicit action. | Reviews UI warning and genuine scenario evidence remain |
+
 ## Slice 2 compact requirement-to-test matrix
 
 | Exit | Requirements | Planned proof | Dependencies / status |
@@ -140,6 +143,18 @@ Current bounded local delivery coverage: `PATH="$PWD/cache/bin:$PATH" S3_001_LIV
 
 Dependencies: Firstmate remains the only Task, brief, report, dependency, and delivery authority; Pi Session remains conversation authority; the Clerk approved commit and execution mode remain Clerk Git authority. Human execution must not invoke Herdr, Treehouse, Worker capabilities, or manufacture runtime facts. The bounded `fm-human-report.sh` writes only the existing Task's `report.md` from Captain-relayed Markdown and records Primary's explicit acceptance evaluation; it does not infer acceptance or create runtime state. The existing S2-007 genuine Escalation evidence is reusable only for explicit-takeover selection, not as proof of the ordinary Human Clerk lifecycle.
 
+## Slice 5 compact requirement-to-test matrix
+
+| Exit | Requirements | Planned proof | Dependencies / status |
+|---|---|---|---|
+| S5-001 | LEARN-001–002 | explicit immutable Source capture plus automatic-learning refusal matrix | **In progress:** the core persistence boundary and negative origin matrix pass in `test:slice5-learning`; production command/API integration and accepted-Human fixture evidence remain |
+| S5-002 | LEARN-003–004, LEARN-007–008 | genuine two-target extraction with isolated Herdr workspaces and owner-exit continuity | Not started |
+| S5-003 | LEARN-005 | complete review, revision invalidation, HEAD race stale, and re-extraction | Not started |
+| S5-004 | LEARN-006 | independent approve/reject with approved-target-only CAS commit | Not started |
+| S5-005 | LEARN-008 | restart reconciliation for live, complete, and interrupted runs | Not started |
+| S5-006 | AUTO-005–006 | isolated implementation-Agent-as-test-Captain evidence bundle | Not started |
+| S5-007 | PLAN-003, AUTO-005 | engineering acceptance marker without fixture data leakage | Not started |
+
 ## Stage status
 
 - Gate 0: **complete**
@@ -147,5 +162,5 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 2: **complete** (S2-001 through S2-007)
 - Slice 3: **complete** (S3-001 through S3-007)
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
-- Slice 5: **not started**
+- Slice 5: **in progress** (S5-001 core Source persistence boundary implemented; production integration and evidence remain)
 - Release Gate: **not started**

@@ -67,6 +67,8 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
+  packages/learning-core: {}
+
   packages/pi-primary-extension: {}
 
   packages/shared: {}
