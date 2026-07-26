@@ -9,7 +9,7 @@ Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 fro
 | CERT-001 | pass (2026-07-26) | `G0_003_LIVE=1 corepack pnpm run cert:gate0-primary-lock` | `evidence/gate-0/artifacts/g0-003-real-web-tui.txt` |
 | CERT-002 | pass (2026-07-26) | `S1_003_LIVE=1 corepack pnpm run cert:slice1-stream-extension-ui` | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
 | CERT-003 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" CERT_003_LIVE=1 corepack pnpm run cert:worker-wake` | `evidence/certifications/cert-003-worker-runtime.md` |
-| CERT-004 | pending | — | — |
+| CERT-004 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" S3_001_LIVE=1 corepack pnpm run cert:slice3-local-delivery` | `evidence/slice-3/s3-001-local-delivery.md` |
 | CERT-005 | pending | — | — |
 | CERT-006 | pending | — | guarded destructive rerun may use only `S3_007_REMOTE_REPOSITORY`, never the product repository |
 
@@ -29,6 +29,18 @@ The fixture now synchronizes on protocol facts rather than exact model wording: 
 
 The isolated genuine-runtime fixture spawned a real Pi 0.82.0 Worker through Firstmate into a dedicated, test-root-bound Herdr workspace. The Worker invoked the production Task status command with the exact Captain-relevant `needs-decision` summary. Firstmate's production watcher discovered the status, durably queued its status key, and the production wake drain returned the exact Worker-authored summary and consumed the queue. Controlled cleanup removed the Worker worktree, dedicated Herdr session, and disposable Firstmate and Project authority.
 
+## CERT-004 observed result
+
+The isolated production fixture initialized a disposable local-only Project, spawned a genuine Pi 0.82.0 Worker through Herdr into a Treehouse worktree, and ran the Project-owned validation command with real Git. Firstmate disclosed the authoritative full diff, refused yolo-off landing before explicit fixture-Captain approval, fast-forwarded `main` to the exact reviewed commit after approval, proved the result landed, and removed volatile Task and worktree state. The run used no remote or forge credentials and cleaned up its dedicated Herdr session and temporary authority.
+
+Observed terminal result:
+
+```text
+ok - S3-001 genuine Pi/Herdr/Treehouse local-only delivery passed (f7cb055937c997af6ab2f6e83275b6cd90d78ed6 -> 3fe5ac365b8f1b3bb3043ae9b5873e8ac0838bd4)
+```
+
+Both commit identities belong only to the disposable certification repository.
+
 ## Boundary
 
-This is only the third of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
+This is only the fourth of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
