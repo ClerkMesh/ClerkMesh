@@ -6,6 +6,7 @@
   "scripts": {
     "build:production": "bash bin/build-production.sh",
     "package:production": "bash bin/package-production.sh",
+    "smoke:production-artifact": "bash bin/smoke-production-artifact.sh",
     "test:gate0-layout": "bash tests/gate0-layout.test.sh",
     "test:gate0-tracking": "bash tests/gate0-tracking.test.sh",
     "test:gate0-lock": "bash tests/gate0-lock.test.sh",
