@@ -11,6 +11,16 @@ import { registerConversationClientAssets } from "./conversation-client-assets.m
 
 const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sessions.v1.schema.json", import.meta.url);
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
+const apiCapabilitiesSchemaUrl = new URL("../../../../packages/shared/schemas/api-capabilities.v1.schema.json", import.meta.url);
+const apiCapabilitiesSchema = JSON.parse(await readFile(apiCapabilitiesSchemaUrl, "utf8"));
+const API_CAPABILITIES = Object.freeze({
+  schema: "clerkmesh.api-capabilities.v1",
+  models: Object.freeze([
+    "clerk-catalog.v1", "clerkmesh-task-detail.v1", "clerkmesh.conversation-events.v1",
+    "clerkmesh.conversation-sessions.v1", "fm-project-catalog.v1", "fm-task-graph.v1",
+    "learning-list.v1", "learning-proposal.v1",
+  ]),
+});
 const clerkCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/clerk-catalog.v1.schema.json", import.meta.url);
 const clerkCatalogSchema = JSON.parse(await readFile(clerkCatalogSchemaUrl, "utf8"));
 const projectCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/fm-project-catalog.v1.schema.json", import.meta.url);
@@ -64,6 +74,7 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   addFormats(ajv);
   const validateCatalog = ajv.compile(catalogSchema);
+  const validateApiCapabilities = ajv.compile(apiCapabilitiesSchema);
   const validateClerkCatalog = ajv.compile(clerkCatalogSchema);
   const validateProjectCatalog = ajv.compile(projectCatalogSchema);
   const validateTaskGraph = ajv.compile(taskGraphSchema);
@@ -97,6 +108,13 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
       return;
     }
     done();
+  });
+
+  app.get("/api/capabilities", async (_request, reply) => {
+    if (!validateApiCapabilities(API_CAPABILITIES)) {
+      return reply.code(503).send({ error: "API capabilities are unavailable." });
+    }
+    return API_CAPABILITIES;
   });
 
   app.get("/api/conversations/sessions", async (_request, reply) => {

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clerkmesh.local/schemas/api-capabilities.v1.schema.json",
+  "title": "ClerkMesh API capabilities v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "models"],
+  "properties": {
+    "schema": { "const": "clerkmesh.api-capabilities.v1" },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*\\.v[1-9][0-9]*$" }
+    }
+  }
+}
