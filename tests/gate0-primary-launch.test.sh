@@ -126,11 +126,20 @@ web_pid=
 
 expected_home=$(cd "$FIXTURE/firstmate" && pwd -P)
 expected_primary_extension=$(cd "$FIXTURE/packages/pi-primary-extension" && pwd -P)/index.ts
+expected_root=$(cd "$FIXTURE" && pwd -P)
 for mode in tui rpc; do
   launch="$CAPTURE/$mode.launch"
   grep -Fxq "cwd=$expected_home" "$launch" || fail "$mode Pi cwd was not canonical"
-  grep -Fxq "env:FM_HOME=$expected_home" "$launch" || fail "$mode FM_HOME was not canonical"
-  grep -Fxq "env:FM_ROOT_OVERRIDE=$expected_home" "$launch" || fail "$mode FM_ROOT_OVERRIDE was not canonical"
+  for assignment in \
+    "CLERKMESH_ROOT=$expected_root" \
+    "CLERKMESH_DATA=$expected_root/clerkmesh-data" \
+    "CLERKMESH_STATE=$expected_root/clerkmesh-state" \
+    "CLERKMESH_CLERKS=$expected_root/clerks" \
+    "CLERKMESH_CACHE=$expected_root/cache" \
+    "FM_ROOT_OVERRIDE=$expected_home" \
+    "FM_HOME=$expected_home"; do
+    grep -Fxq "env:$assignment" "$launch" || fail "$mode did not inject canonical absolute $assignment"
+  done
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-turnend-guard.ts" "$launch" || fail "$mode omitted the turn-end extension"
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-pi-watch.ts" "$launch" || fail "$mode omitted the watcher extension"
   grep -Fxq "arg:$expected_primary_extension" "$launch" || fail "$mode omitted the ClerkMesh Primary extension"
