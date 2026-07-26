@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.17.0",
   "scripts": {
+    "build:production": "bash bin/build-production.sh",
     "test:gate0-layout": "bash tests/gate0-layout.test.sh",
     "test:gate0-tracking": "bash tests/gate0-tracking.test.sh",
     "test:gate0-lock": "bash tests/gate0-lock.test.sh",
