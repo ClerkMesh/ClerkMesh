@@ -155,7 +155,7 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 | S5-004 | LEARN-006 | independent approve/reject with approved-target-only CAS commit | **Complete:** reviewed targets independently persist Captain approval or rejection with exact base/tree decision evidence. Approval revalidates Markdown-only output, refuses post-review edits and HEAD races, creates the reviewed tree as a single-parent commit, and compare-and-swap advances only the approved Clerk branch; rejection leaves its Clerk unchanged. After all targets are decided, the authoritative Proposal becomes resolved and refuses further decisions. `test:slice5-learning`; `evidence/slice-5/s5-004-independent-learning-decisions.md`. |
 | S5-005 | LEARN-008 | restart reconciliation for live, complete, and interrupted runs | **Complete:** authoritative endpoint reconciliation preserves live extraction, materializes completed output as review-ready, and records interrupted/failed targets without relaunching or inventing Captain decisions. Production Herdr inspection uses application-owned success markers, active runtime statuses, and absent endpoints fail-closed. Genuine Pi/Herdr certification SIGKILLs a synchronized launch owner, observes both extraction Agents complete independently, and recovers both targets from persisted authority; `cert:slice5-restart-reconciliation`; `test:slice5-learning`; `evidence/slice-5/s5-005-restart-reconciliation.md`. |
 | S5-006 | AUTO-005–006 | isolated implementation-Agent-as-test-Captain evidence bundle | **Complete:** a reproducible temporary fixture reviews both complete diffs, approves one target, rejects the other, and emits Source hash, base/tree, diff, decision, and result-commit evidence while proving rejected-target and real-data isolation; `cert:slice5-test-captain-decisions`; `test:slice5-learning`; `evidence/slice-5/s5-006-test-captain-decisions.md`. |
-| S5-007 | PLAN-003, AUTO-005 | engineering acceptance marker without fixture data leakage | Not started |
+| S5-007 | PLAN-003, AUTO-005 | engineering acceptance marker without fixture data leakage | **Complete:** all Slice 5 exits have reproducible engineering evidence, the focused suite passes, and Slice 5 is explicitly marked `awaiting-final-captain-uat`; isolated test-Captain decisions remain fixture-only facts and are not represented as Captain approval or business data; `evidence/slice-5/s5-007-awaiting-final-captain-uat.md`. |
 
 ## Stage status
 
@@ -164,5 +164,6 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 2: **complete** (S2-001 through S2-007)
 - Slice 3: **complete** (S3-001 through S3-007)
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
-- Slice 5: **engineering complete** (S5-001–S5-005 complete; certification packages are next)
+- Slice 5: **awaiting-final-captain-uat** (S5-001 through S5-007 engineering exits complete)
+- Certifications: **in progress** (CERT-001 through CERT-004 and CERT-006 complete; CERT-005 is next)
 - Release Gate: **not started**
