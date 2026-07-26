@@ -1,14 +1,14 @@
 
 ================================================================================
-SESSION START - /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate
+SESSION START - /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate
 ================================================================================
 
 LOCK
 --------------------------------------------------------------------------------
-error: another live firstmate session holds the lock (pid 30871); operate read-only until resolved
+error: another live firstmate session holds the lock (pid 6599); operate read-only until resolved
 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ●  READ-ONLY SESSION - ANOTHER LIVE FIRSTMATE SESSION HOLDS THE FLEET LOCK
-●  error: another live firstmate session holds the lock (pid 30871); operate read-only until resolved
+●  error: another live firstmate session holds the lock (pid 6599); operate read-only until resolved
 ●  Skipping every mutating step: PR-check migration, secondmate sync,
 ●  X-mode artifacts, fleet sync, and wake-queue drain. Detect-only bootstrap
 ●  diagnostics and the rest of this read-only-safe digest still ran below.
@@ -22,7 +22,6 @@ NOTICE: auto-detected herdr runtime (HERDR_ENV=1) - spawning into the EXPERIMENT
 MISSING: treehouse (install: curl -fsSL https://kunchenguid.github.io/treehouse/install.sh | sh)
 MISSING: chrome-devtools-axi (install: npm install -g chrome-devtools-axi && chrome-devtools-axi setup hooks)
 MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
-MISSING: tasks-axi (install: npm install -g tasks-axi)
 MISSING: quota-axi (install: npm install -g quota-axi)
 
 WAKE QUEUE
@@ -41,7 +40,7 @@ Mode: Pi extension background wake.
 
 When this session owns supervision and away mode is not active:
 1. Drain first with `bin/fm-wake-drain.sh`.
-2. Confirm the Pi primary auto-loaded both project extensions (plain `pi`, after approving project trust once per clone); if not, restart with `-e /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts -e /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts` as a trust-free fallback.
+2. Confirm the Pi primary auto-loaded both project extensions (plain `pi`, after approving project trust once per clone); if not, restart with `-e /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts -e /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts` as a trust-free fallback.
 3. First cycle only: make the one required `fm_watch_arm_pi` call.
    Use `/fm-watch-arm-pi` only as a human-entered fallback.
    Never run `bin/fm-watch-arm.sh` through Pi's bash tool because that foreground arm can wedge the agent and bypasses extension-owned cleanup.
@@ -53,10 +52,10 @@ When this session owns supervision and away mode is not active:
 9. Missing, failed, or unhealthy cycle only: if a later notification explicitly reports one of those repair conditions, drain queued wakes, inspect the failure text, call `fm_watch_arm_pi`, and restart Pi with both extensions loaded if needed.
    A redundant call while the extension owns an arm child or scheduled retry is an ownership-based `watcher: unchanged` no-op, not an independent health claim.
 10. Never use shell `&` for watcher supervision.
-   The arm mechanism above is extension-owned, not a model tool call, but a manual recovery probe that backgrounds, pipes, or bundles the arm is denied automatically by the PreToolUse seatbelt (`bin/fm-arm-pretool-check.sh`, wired into the turn-end guard extension at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`).
+   The arm mechanism above is extension-owned, not a model tool call, but a manual recovery probe that backgrounds, pipes, or bundles the arm is denied automatically by the PreToolUse seatbelt (`bin/fm-arm-pretool-check.sh`, wired into the turn-end guard extension at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`).
 
-The turn-end guard extension lives at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`.
-The watcher extension lives at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts`.
+The turn-end guard extension lives at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`.
+The watcher extension lives at `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/tui-wins-web-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts`.
 Both are tracked, project-local `.pi/extensions/*.ts` files that Pi auto-discovers once the project is trusted; `bin/fm-session-start.sh` reports when the running Pi session has not loaded both required extensions.
 
 Verification on 2026-07-09 used Pi 0.80.5, an isolated `PI_CODING_AGENT_DIR`, an isolated `FM_HOME`, and the dedicated tmux socket `fm-pi-q6-lab`.

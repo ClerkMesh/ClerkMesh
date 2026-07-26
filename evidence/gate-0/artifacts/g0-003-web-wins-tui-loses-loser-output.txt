@@ -26,11 +26,15 @@
 [Extensions]
   project
 
-/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-wins
+/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wins
 -tui-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts
 
-/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-wins
+/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wins
 -tui-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts
+  path
+
+/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wins
+-tui-loses/repo/packages/pi-primary-extension
 
 
  Warning: No models available. Use /login to log into a provider via OAuth or
@@ -44,14 +48,14 @@
 
 ────────────────────────────────────────────────────────────────────────────────
  $
- '/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-w
+ '/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-w
  ins-tui-loses/repo/firstmate/bin/fm-session-start.sh'
 
 
  ==============================================================================
  ==
  SESSION START -
- /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-wi
+ /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wi
  ns-tui-loses/repo/firstmate
  ==============================================================================
  ==
@@ -59,11 +63,11 @@
  LOCK
  ------------------------------------------------------------------------------
  --
- error: another live firstmate session holds the lock (pid 27585); operate
+ error: another live firstmate session holds the lock (pid 3207); operate
  read-only until resolved
  ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  ●  READ-ONLY SESSION - ANOTHER LIVE FIRSTMATE SESSION HOLDS THE FLEET LOCK
- ●  error: another live firstmate session holds the lock (pid 27585); operate
+ ●  error: another live firstmate session holds the lock (pid 3207); operate
  read-only until resolved
  ●  Skipping every mutating step: PR-check migration, secondmate sync,
  ●  X-mode artifacts, fleet sync, and wake-queue drain. Detect-only bootstrap
@@ -81,7 +85,6 @@
  chrome-devtools-axi setup hooks)
  MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup
  hooks)
- MISSING: tasks-axi (install: npm install -g tasks-axi)
  MISSING: quota-axi (install: npm install -g quota-axi)
 
  WAKE QUEUE
@@ -108,9 +111,9 @@
  1. Drain first with `bin/fm-wake-drain.sh`.
  2. Confirm the Pi primary auto-loaded both project extensions (plain `pi`,
  after approving project trust once per clone); if not, restart with `-e
- /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-wi
+ /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wi
  ns-tui-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts -e
- /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-wi
+ /private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-wi
  ns-tui-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts` as a
  trust-free fallback.
  3. First cycle only: make the one required `fm_watch_arm_pi` call.
@@ -143,14 +146,14 @@
  manual recovery probe that backgrounds, pipes, or bundles the arm is denied
  automatically by the PreToolUse seatbelt (`bin/fm-arm-pretool-check.sh`, wired
  into the turn-end guard extension at
- `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-w
+ `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-w
  ins-tui-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`).
 
  The turn-end guard extension lives at
- `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-w
+ `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-w
  ins-tui-loses/repo/firstmate/.pi/extensions/fm-primary-turnend-guard.ts`.
  The watcher extension lives at
- `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-w
+ `/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-w
  ins-tui-loses/repo/firstmate/.pi/extensions/fm-primary-pi-watch.ts`.
  Both are tracked, project-local `.pi/extensions/*.ts` files that Pi
  auto-discovers once the project is trusted; `bin/fm-session-start.sh` reports
@@ -296,5 +299,5 @@
 ────────────────────────────────────────────────────────────────────────────────
 
 ────────────────────────────────────────────────────────────────────────────────
-/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.qtf9Z0EQ8i/web-w...
+/private/var/folders/jq/wm_8wm115sq_bp3cj8tkm9_r0000gn/T/tmp.1Hv4bJi5Zu/web-w...
 0.0%/0 (auto)                                                            unknown
