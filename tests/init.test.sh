@@ -57,11 +57,15 @@ assert_initialized() {
   assert_file "$fixture/clerkmesh-data/.clerkmesh-version"
   assert_file "$fixture/clerkmesh-data/clerks.md"
   assert_file "$fixture/clerks/escalation/CLERK.md"
+  assert_file "$fixture/clerks/research/CLERK.md"
   assert_dir "$fixture/clerkmesh-state"
   assert_dir "$fixture/cache"
   git -C "$fixture/clerks/escalation" rev-parse --verify HEAD >/dev/null
+  git -C "$fixture/clerks/research" rev-parse --verify HEAD >/dev/null
   [ -z "$(git -C "$fixture/clerks/escalation" status --porcelain)" ] || fail "Escalation Clerk repository is dirty"
+  [ -z "$(git -C "$fixture/clerks/research" status --porcelain)" ] || fail "Research Clerk repository is dirty"
   grep -Fq '| escalation |' "$fixture/clerkmesh-data/clerks.md" || fail "registry omits Escalation Clerk"
+  grep -Fq '| research |' "$fixture/clerkmesh-data/clerks.md" || fail "registry omits Research Clerk"
 }
 
 # Init validates its complete dependency and provenance boundary before writing state.
@@ -172,6 +176,12 @@ make_fixture "$MODIFIED_ESCALATION"
 "$MODIFIED_ESCALATION/bin/clerkmesh" init > /dev/null
 printf '\ncaptain-owned conflicting bytes\n' >> "$MODIFIED_ESCALATION/clerks/escalation/CLERK.md"
 assert_refused_unchanged "$MODIFIED_ESCALATION" 'conflicting current-version Escalation Clerk' 'modified Escalation Clerk repository'
+
+MODIFIED_RESEARCH="$TMP/modified-research"
+make_fixture "$MODIFIED_RESEARCH"
+"$MODIFIED_RESEARCH/bin/clerkmesh" init > /dev/null
+printf '\ncaptain-owned conflicting bytes\n' >> "$MODIFIED_RESEARCH/clerks/research/CLERK.md"
+assert_refused_unchanged "$MODIFIED_RESEARCH" 'conflicting current-version Research Clerk' 'modified Research Clerk repository'
 
 SYMLINK_STATE="$TMP/symlink-state"
 EXTERNAL_STATE="$TMP/external-state"

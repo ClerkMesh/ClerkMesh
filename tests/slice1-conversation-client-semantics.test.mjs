@@ -11,7 +11,11 @@ assert.match(source, /New conversation/, "an empty session catalog must expose a
 assert.match(source, /sessionId: active\?\.id \?\? null/, "a new conversation must launch the Primary without an existing session id");
 assert.match(source, /event\.key === "Enter" && !event\.shiftKey/, "Enter must send while Shift+Enter remains available for a newline");
 assert.match(source, /nativeEvent\.isComposing/, "IME composition Enter must not submit a partial message");
-assert.match(source, /scrollIntoView/, "new streaming events must keep the conversation viewport at the latest content");
+assert.match(source, /viewport\.scrollTop = viewport\.scrollHeight/, "new streaming events must keep the timeline viewport at the latest content without scrolling the page");
+assert.match(source, /newConversationAfter === null \? \[\] : events\.filter/, "a new-conversation view must not retain events from the previous live session");
+assert.match(source, /workspace === "work" \|\| workspace === "conversations"/, "conversation sockets must subscribe to live Work projections");
+assert.match(source, /Current work/, "the conversation must expose active or blocked Task status");
+assert.match(source, /setNewConversationAfter\(events\.at\(-1\)\?\.sequence \?\? 0\)/, "a new conversation must start its visible timeline after the previous live snapshot");
 
 const assetsUrl = new URL("../apps/web/client/dist/assets/", import.meta.url);
 const scripts = (await readdir(assetsUrl)).filter((name) => name.endsWith(".js"));

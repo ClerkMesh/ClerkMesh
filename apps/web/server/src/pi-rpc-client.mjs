@@ -88,6 +88,13 @@ export function createPiRpcClient({ child, onEvent = () => {}, maxLineBytes = 10
       }
       return { commands };
     },
+    async getState() {
+      const data = await command("get_state");
+      if (typeof data?.sessionId !== "string" || data.sessionId.length === 0) {
+        throw new PiRpcError("invalid-state", "Pi RPC returned an invalid session identity.");
+      }
+      return Object.freeze({ sessionId: data.sessionId });
+    },
     async getMessages() {
       const data = await command("get_messages");
       if (!Array.isArray(data?.messages)) {

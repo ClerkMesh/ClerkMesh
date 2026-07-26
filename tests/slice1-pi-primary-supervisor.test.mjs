@@ -20,6 +20,8 @@ function fakeChild() {
     const command = JSON.parse(bytes.toString());
     const data = command.type === "get_commands"
       ? { commands: [{ name: "clerkmesh-status", source: "extension" }] }
+      : command.type === "get_state"
+        ? { sessionId: "active-session" }
       : command.type === "get_messages"
         ? { messages: [
             { role: "user", content: "Persisted Captain message", timestamp: 1 },
@@ -52,6 +54,7 @@ const [primaryA, primaryB] = await Promise.all([
   supervisor.start({ session: { path: "/trusted/server/session.jsonl" } }),
 ]);
 assert.equal(primaryA, primaryB);
+assert.equal(primaryA.sessionId, "active-session");
 assert.equal(spawns, 1, "concurrent startup must own one child");
 assert.deepEqual(supervisor.state(), { started: true, offline: false, pid: 4242 });
 assert.deepEqual(

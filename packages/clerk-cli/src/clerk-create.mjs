@@ -25,7 +25,7 @@ if (process.exitCode !== 2) {
     const stateRoot = process.env.CLERKMESH_STATE;
     const clerksRootInput = process.env.CLERKMESH_CLERKS;
     if (!dataRoot || !stateRoot || !clerksRootInput) throw new Error("CLERKMESH_DATA, CLERKMESH_STATE, and CLERKMESH_CLERKS are required");
-    if (name === "escalation") throw new Error("Escalation Clerk cannot be created");
+    if (["escalation", "research"].includes(name)) throw new Error("bundled Clerk cannot be created");
     const clerksRoot = await realpath(resolve(clerksRootInput));
     const registryPath = resolve(dataRoot, "clerks.md");
     journalPath = createJournalPath(stateRoot);

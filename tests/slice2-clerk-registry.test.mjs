@@ -43,7 +43,7 @@ try {
     await assert.rejects(parseClerkRegistry({ registryPath: registry, clerksRoot: clerks }), pattern);
   }
   await rejects((text) => text.replace("| product-alice |", "| escalation |"), /duplicate/);
-  await rejects((text) => text.replace("archived | false", "active | true"), /only Escalation/);
+  await rejects((text) => text.replace("archived | false", "active | true"), /only bundled Clerks/);
   await rejects((text) => text.replace(`${join(clerks, "product-alice")} |`, `${join(root, "outside")} |`), /repository does not exist/);
   await rejects((text) => text.replace("active | true", "archived | true"), /Escalation Clerk/);
   await rejects((text) => text.replace("# Clerk registry v1", "# Clerk registry v2"), /header/);

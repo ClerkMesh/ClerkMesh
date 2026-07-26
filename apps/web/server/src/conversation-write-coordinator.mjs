@@ -40,7 +40,12 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
       throw new ConversationWriteError("session-not-found", "The selected Pi session is unavailable.");
     }
     // Only the trusted server-side session record crosses the launch boundary.
-    return startPrimary({ session });
+    const primary = await startPrimary({ session });
+    const canonicalSessionId = typeof primary?.sessionId === "string" && primary.sessionId.length > 0
+      ? primary.sessionId
+      : sessionId;
+    selectedSessionId = canonicalSessionId;
+    return primary;
   }
 
   return Object.freeze({

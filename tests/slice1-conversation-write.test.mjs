@@ -49,6 +49,22 @@ await assert.rejects(
 );
 assert.equal(starts, 1);
 
+const fresh = createConversationWriteCoordinator({
+  resolveSession: async (id) => id === "generated-session" ? { path: "/private/generated.jsonl" } : undefined,
+  startPrimary: async () => ({ rpc: true, sessionId: "generated-session" }),
+  sendPrompt: async (_primary, message) => ({ accepted: message }),
+});
+await fresh.send({ clientToken: "browser-c", requestId: "fresh-1", sessionId: null, message: "create" });
+assert.deepEqual(
+  await fresh.send({ clientToken: "browser-c", requestId: "fresh-2", sessionId: "generated-session", message: "resume after refresh" }),
+  { accepted: "resume after refresh" },
+  "a newly persisted Pi session must resume by its generated id",
+);
+await assert.rejects(
+  fresh.send({ clientToken: "browser-c", requestId: "fresh-3", sessionId: "different-session", message: "switch" }),
+  (error) => error instanceof ConversationWriteError && error.code === "session-locked",
+);
+
 const missing = createConversationWriteCoordinator({
   resolveSession: async () => undefined,
   startPrimary: async () => { throw new Error("must not launch"); },
