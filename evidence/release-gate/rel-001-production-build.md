@@ -1,6 +1,6 @@
 # REL-001 Release Gate item 8 — production build
 
-Status: **in progress** (production build, distributable assembly, and extracted-artifact launch pass; independent clean-machine smoke remains)
+Status: **blocked** (production build, distributable assembly, and extracted-artifact launch pass; independent clean-machine access is unavailable, as recorded in `rel-001-clean-machine-blocker.md`)
 
 ## Reproduction
 
@@ -55,4 +55,4 @@ Observed on 2026-07-26: the smoke extracted the archive under a fresh temporary 
 
 `bin/smoke-production-artifact.sh` is the reproducible artifact-launch boundary and fails closed on a missing launcher, prepackaged dependencies, install/init failure, server exit or timeout, missing built client, or malformed capabilities response. It always stops its launched server and removes extracted runtime state.
 
-This is not yet item 8 completion. The same tracked artifact and smoke command must still pass on an independent clean macOS arm64 machine.
+This is not yet item 8 completion. The same tracked artifact and smoke command must still pass on an independent clean macOS arm64 machine. The current harness has no second host or provisioning credential; `rel-001-clean-machine-blocker.md` provides the reproducible Captain handoff and exact unblock evidence.
