@@ -5,13 +5,15 @@ const source = await readFile(new URL("../apps/web/client/src/App.tsx", import.m
 assert.match(source, /Local write lease:/, "the lease must be described as local browser state");
 assert.match(source, /not authentication or identity/, "the lease must explicitly disclaim authentication and identity semantics");
 assert.match(source, /Claim local write lease/, "claiming must use lease terminology rather than account or identity terminology");
+assert.match(source, /general shell tools run as your OS user/, "the UI must disclose the same-user shell boundary");
+assert.match(source, /not a confidentiality or tamper-resistant sandbox/, "the UI must disclaim hard isolation");
 
 const assetsUrl = new URL("../apps/web/client/dist/assets/", import.meta.url);
 const scripts = (await readdir(assetsUrl)).filter((name) => name.endsWith(".js"));
 assert.equal(scripts.length, 1, "the production build should contain one application script");
 const built = await readFile(new URL(scripts[0], assetsUrl), "utf8");
-for (const text of ["Local write lease:", "not authentication or identity", "Claim local write lease"]) {
+for (const text of ["Local write lease:", "not authentication or identity", "Claim local write lease", "general shell tools run as your OS user", "not a confidentiality or tamper-resistant sandbox"]) {
   assert.ok(built.includes(text), `the production client must include ${JSON.stringify(text)}`);
 }
 
-console.log("ok - client token is presented only as a local write lease, never identity or authentication");
+console.log("ok - client discloses local lease and same-OS-user security boundaries");
