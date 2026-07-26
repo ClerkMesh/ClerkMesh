@@ -38,7 +38,7 @@ async function send(requestId, message) {
 async function waitFor(predicate, description, timeout = 120_000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const events = application.eventProjection.snapshot({ includeDiagnostics: true }).events;
+    const events = application.eventProjection.snapshot({ diagnostics: true }).events;
     if (predicate(events)) return events;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -55,13 +55,16 @@ try {
   const uiEvent = afterCommand.find((event) => event.kind === "extension-ui");
   assert(JSON.stringify(uiEvent.payload).includes("ClerkMesh Primary protocol is loaded."), "unexpected extension UI payload");
 
-  await send("s1-003-stream", "Reply with exactly: CLERKMESH_S1_003_OK");
+  await send("s1-003-stream", "Use the bash tool to run `printf CLERKMESH_S1_003_TOOL`, then reply with exactly: CLERKMESH_S1_003_OK");
   const events = await waitFor(
     (items) => items.some((event) => event.kind === "primary-status" && event.payload.status === "settled"),
     "real Pi agent_settled",
   );
   assert(events.some((event) => event.kind === "stream-fragment" && event.payload.text.length > 0), "real Pi produced no visible stream fragment");
   assert(events.some((event) => event.kind === "visible-message" && event.payload.role === "assistant" && event.payload.content.includes("CLERKMESH_S1_003_OK")), "unexpected real Pi reply");
+  assert(events.some((event) => event.kind === "diagnostic" && JSON.stringify(event.payload).includes("tool")), "real Pi produced no tool diagnostic");
+  assert.equal(application.eventProjection.snapshot().events.some((event) => event.kind === "diagnostic"), false, "ordinary projection exposed diagnostics");
+  assert.equal(JSON.stringify(events).includes(process.env.HOME ?? "\u0000"), false, "diagnostics exposed HOME");
   assert.equal(application.supervisor.state().started, true);
   assert(Number.isInteger(application.supervisor.state().pid));
   console.log("ok - S1-003 real Pi startup, stream, extension UI, and agent_settled passed");
