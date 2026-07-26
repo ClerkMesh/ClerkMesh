@@ -79,7 +79,7 @@ try {
   assert.match(transcript, /S4_001_ACCEPTED/);
   assert.match(transcript, /clerk-inspect\.sh/);
   assert.match(transcript, /clerk-context-compile\.sh/);
-  assert.match(transcript, /fm-human-report\.sh/);
+  assert.match(transcript, /clerk-human-report\.sh/);
 
   const context = parseExecutionContextFromBrief(await readFile(brief, "utf8"), { expectedExecution: "human" });
   assert.equal(context.context.taskId, taskId);

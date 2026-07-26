@@ -80,7 +80,7 @@ try {
   const humanBrief = join(data, humanTask, "brief.md");
   await writeFile(humanBrief, "# Human design review\n\nAcceptance criterion: provide the exact approved sentence for README.md.\n");
   await run(join(productRoot, "packages/clerk-cli/bin/clerk-context-compile.sh"), ["--repository", human.repository, "--commit", human.commit, "--task-id", humanTask, "--reason", "Human judgment is required.", "--boundaries", "Do not change the Project.", "--brief", humanBrief]);
-  await run(join(productRoot, "firstmate/bin/fm-human-report.sh"), ["--task", humanTask, "--outcome", "accepted", "--evaluation", "The exact README sentence was supplied."], { input: "## Accepted wording\n\nAdd: `Human-reviewed change.`\n" });
+  await run(join(productRoot, "packages/clerk-cli/bin/clerk-human-report.sh"), ["--task", humanTask, "--outcome", "accepted", "--evaluation", "The exact README sentence was supplied."], { input: "## Accepted wording\n\nAdd: `Human-reviewed change.`\n" });
   const report = await readFile(join(data, humanTask, "report.md"));
   const sourceRoot = join(state, "learning-sources");
   const sourceIds = (await readdir(sourceRoot)).filter((entry) => !entry.startsWith("."));

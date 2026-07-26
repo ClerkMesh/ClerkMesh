@@ -9,7 +9,7 @@ import { encodeExecutionContext } from "../packages/clerk-cli/src/execution-cont
 const root = await realpath(await mkdtemp(join(tmpdir(), "clerkmesh-s4-human-lifecycle-")));
 const taskId = "human-lifecycle";
 const taskDir = join(root, "data", taskId);
-const command = new URL("../firstmate/bin/fm-human-report.sh", import.meta.url).pathname;
+const command = new URL("../packages/clerk-cli/bin/clerk-human-report.sh", import.meta.url).pathname;
 
 try {
   await mkdir(taskDir, { recursive: true });

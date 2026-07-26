@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-CMD="$ROOT/firstmate/bin/fm-human-report.sh"
+CMD="$ROOT/packages/clerk-cli/bin/clerk-human-report.sh"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/home/data/human-task"

@@ -19,5 +19,9 @@ if rg -i 'execution[_-]?clerk|clerk[_-]?(owner|assignment)' firstmate/bin firstm
   echo "Firstmate production control plane contains a Clerk ownership field" >&2
   exit 1
 fi
+if [ -e firstmate/bin/fm-human-report.sh ] || [ ! -x packages/clerk-cli/bin/clerk-human-report.sh ]; then
+  echo "Human Clerk report semantics are not confined to the ClerkMesh control plane" >&2
+  exit 1
+fi
 
 printf '%s\n' 'ok - S2-006 path-free Clerk catalog and transient Task-detail projection passed'

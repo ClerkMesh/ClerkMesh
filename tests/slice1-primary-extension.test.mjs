@@ -56,7 +56,7 @@ for (const rule of [
   /do not spawn or wake a Worker.*endpoint, capability, worktree, or synthetic Agent status/is,
   /Captain.*local operator relaying facts, not an account and not the Clerk/s,
   /Captain-relayed start, progress, questions, evidence, and result.*visible messages.*current Primary conversation/s,
-  /actually run.*fm-human-report\.sh --task <task-id> --outcome accepted\|rejected\|incomplete --evaluation <acceptance-evaluation>/s,
+  /actually run.*clerk-human-report\.sh --task <task-id> --outcome accepted\|rejected\|incomplete --evaluation <acceptance-evaluation>/s,
   /Use `accepted` only after explicitly evaluating.*every Task acceptance criterion.*otherwise record `rejected` or `incomplete`/s,
   /command failure as a hard stop.*never claim the report was published/s,
   /Captain actor provenance.*"type":"captain".*"id":"local".*Firstmate `report\.md`/s,
