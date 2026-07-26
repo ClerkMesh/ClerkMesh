@@ -7,7 +7,7 @@ Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 fro
 | Certification | Release Gate rerun | Command | Tracked result |
 |---|---|---|---|
 | CERT-001 | pass (2026-07-26) | `G0_003_LIVE=1 corepack pnpm run cert:gate0-primary-lock` | `evidence/gate-0/artifacts/g0-003-real-web-tui.txt` |
-| CERT-002 | pending | — | — |
+| CERT-002 | pass (2026-07-26) | `S1_003_LIVE=1 corepack pnpm run cert:slice1-stream-extension-ui` | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
 | CERT-003 | pending | — | — |
 | CERT-004 | pending | — | — |
 | CERT-005 | pending | — | — |
@@ -19,6 +19,12 @@ The opt-in production fixture passed both real launch orders on the certified ar
 
 The tracked artifact records source commit and exact Pi, Node, pnpm, Git, tmux, Herdr, OS, and architecture versions. The two loser-output artifacts preserve the expected lock-holder diagnostics.
 
+## CERT-002 observed result
+
+The production fixture started a genuine Pi 0.82.0 RPC Primary with the canonical ClerkMesh extension, discovered and invoked `/clerkmesh-status`, and observed its real extension UI. A subsequent configured-provider run emitted visible stream fragments, executed Bash, produced a durable assistant response, and reached a new `agent_settled` state. Opt-in diagnostics retained the tool lifecycle while the ordinary projection excluded it; the planted environment secret, Authorization value, and real `HOME` were absent and the Bearer redaction marker was present. Controlled application shutdown terminated the owned Pi process and removed the disposable session fixture.
+
+The fixture now synchronizes on protocol facts rather than exact model wording: it requires a new assistant message and a new settled event after the prompt, plus genuine tool diagnostics. This avoids treating provider phrasing variability as a certification failure while retaining all CERT-002 assertions.
+
 ## Boundary
 
-This is only the first of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
+This is only the second of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.

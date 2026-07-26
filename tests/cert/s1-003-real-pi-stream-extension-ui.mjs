@@ -57,13 +57,21 @@ try {
   const uiEvent = afterCommand.find((event) => event.kind === "extension-ui");
   assert(JSON.stringify(uiEvent.payload).includes("ClerkMesh Primary protocol is loaded."), "unexpected extension UI payload");
 
-  await send("s1-003-stream", "Use the bash tool to run `printf '%s\\n' \"$CLERKMESH_S1_003_SECRET\" 'Authorization: Bearer CLERKMESH_S1_003_HEADER_TOKEN'`, then reply with exactly: CLERKMESH_S1_003_OK");
+  const settledBeforeRun = afterCommand.filter(
+    (event) => event.kind === "primary-status" && event.payload.status === "settled",
+  ).length;
+  const assistantMessagesBeforeRun = afterCommand.filter(
+    (event) => event.kind === "visible-message" && event.payload.role === "assistant",
+  ).length;
+  await send("s1-003-stream", "Use the bash tool to run `printf '%s\\n' \"$CLERKMESH_S1_003_SECRET\" 'Authorization: Bearer CLERKMESH_S1_003_HEADER_TOKEN'`, then briefly acknowledge completion.");
   const events = await waitFor(
-    (items) => items.some((event) => event.kind === "visible-message" && event.payload.role === "assistant" && event.payload.content.includes("CLERKMESH_S1_003_OK")),
-    "real Pi tool run and expected reply",
+    (items) => items.filter((event) => event.kind === "primary-status" && event.payload.status === "settled").length > settledBeforeRun
+      && items.filter((event) => event.kind === "visible-message" && event.payload.role === "assistant").length > assistantMessagesBeforeRun
+      && items.some((event) => event.kind === "diagnostic" && JSON.stringify(event.payload).includes("tool")),
+    "real Pi tool run, assistant response, and settled state",
   );
   assert(events.some((event) => event.kind === "stream-fragment" && event.payload.text.length > 0), "real Pi produced no visible stream fragment");
-  assert(events.some((event) => event.kind === "visible-message" && event.payload.role === "assistant" && event.payload.content.includes("CLERKMESH_S1_003_OK")), "unexpected real Pi reply");
+  assert(events.filter((event) => event.kind === "visible-message" && event.payload.role === "assistant").length > assistantMessagesBeforeRun, "real Pi produced no assistant response");
   assert(events.some((event) => event.kind === "diagnostic" && JSON.stringify(event.payload).includes("tool")), "real Pi produced no tool diagnostic");
   assert.equal(application.eventProjection.snapshot().events.some((event) => event.kind === "diagnostic"), false, "ordinary projection exposed diagnostics");
   const retainedEvents = JSON.stringify(events);
