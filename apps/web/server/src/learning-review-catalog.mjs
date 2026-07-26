@@ -51,12 +51,29 @@ export async function projectLearningReviews({ proposalRoot, observedAt = new Da
     const manifest = JSON.parse(bytes.toString("utf8"));
     if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== id || !Array.isArray(manifest.targets)) throw new Error("invalid Learning Proposal manifest");
     const targets = [];
+    const proposalOmitted = [];
     for (const target of manifest.targets) {
       const projected = reviewTarget(target);
       if (projected) targets.push(projected);
-      else omitted.push(Object.freeze({ proposalId: id, reason: `Target ${target.name} has no materialized review` }));
+      else {
+        const reason = `Target ${target.name} has no materialized review`;
+        proposalOmitted.push(Object.freeze({ reason }));
+        omitted.push(Object.freeze({ proposalId: id, reason }));
+      }
     }
-    if (targets.length > 0) proposals.push(Object.freeze({ schema: "learning-proposal.v1", id, state: manifest.state, createdAt: manifest.createdAt, resolvedAt: manifest.resolvedAt ?? null, targets }));
+    if (targets.length > 0) proposals.push(Object.freeze({
+      schema: "learning-proposal.v1",
+      observedAt,
+      freshness: "current",
+      provenance: { authority: "clerkmesh-learning-proposals" },
+      id,
+      state: manifest.state,
+      createdAt: manifest.createdAt,
+      resolvedAt: manifest.resolvedAt ?? null,
+      targets,
+      omitted: proposalOmitted,
+      errors: [],
+    }));
     else omitted.push(Object.freeze({ proposalId: id, reason: "Proposal has no materialized reviews" }));
   }
   return Object.freeze({

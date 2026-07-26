@@ -16,9 +16,14 @@ export interface LearningReviewTargetV1 {
 
 export interface LearningProposalV1 {
   schema: "learning-proposal.v1";
+  observedAt: string;
+  freshness: "current" | "unknown";
+  provenance: { authority: "clerkmesh-learning-proposals" };
   id: string;
   state: string;
   createdAt: string;
   resolvedAt: string | null;
   targets: LearningReviewTargetV1[];
+  omitted: Array<{ reason: string }>;
+  errors: Array<{ reason: string }>;
 }

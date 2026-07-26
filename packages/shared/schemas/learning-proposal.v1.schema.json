@@ -4,45 +4,255 @@
   "title": "Learning Proposal Review Projection v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "id", "state", "createdAt", "resolvedAt", "targets"],
+  "required": [
+    "schema",
+    "observedAt",
+    "freshness",
+    "provenance",
+    "id",
+    "state",
+    "createdAt",
+    "resolvedAt",
+    "targets",
+    "omitted",
+    "errors"
+  ],
   "properties": {
-    "schema": { "const": "learning-proposal.v1" },
-    "id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-    "state": { "type": "string", "minLength": 1, "maxLength": 64 },
-    "createdAt": { "type": "string", "format": "date-time" },
-    "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+    "schema": {
+      "const": "learning-proposal.v1"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "freshness": {
+      "enum": [
+        "current",
+        "unknown"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority"
+      ],
+      "properties": {
+        "authority": {
+          "const": "clerkmesh-learning-proposals"
+        }
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "state": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
     "targets": {
       "type": "array",
       "maxItems": 1000,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "state", "source", "changedPaths", "fullDiff", "identity", "warnings", "validation", "preparedAt", "reviewedAt", "decision"],
+        "required": [
+          "name",
+          "state",
+          "source",
+          "changedPaths",
+          "fullDiff",
+          "identity",
+          "warnings",
+          "validation",
+          "preparedAt",
+          "reviewedAt",
+          "decision"
+        ],
         "properties": {
-          "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-          "state": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
           "source": {
-            "type": "object", "additionalProperties": false, "required": ["id", "contentSha256", "preview"],
-            "properties": { "id": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "preview": { "type": "string", "maxLength": 20971520 } }
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "contentSha256",
+              "preview"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "contentSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "preview": {
+                "type": "string",
+                "maxLength": 20971520
+              }
+            }
           },
-          "changedPaths": { "type": "array", "maxItems": 10000, "items": { "type": "string", "pattern": "^[^/\\0](?:.*[^/\\0])?\\.md$", "maxLength": 4096 } },
-          "fullDiff": { "type": "string", "maxLength": 20971520 },
+          "changedPaths": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "type": "string",
+              "pattern": "^[^/\\0](?:.*[^/\\0])?\\.md$",
+              "maxLength": 4096
+            }
+          },
+          "fullDiff": {
+            "type": "string",
+            "maxLength": 20971520
+          },
           "identity": {
-            "type": "object", "additionalProperties": false, "required": ["baseCommit", "candidateTree"],
-            "properties": { "baseCommit": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" }, "candidateTree": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" } }
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "baseCommit",
+              "candidateTree"
+            ],
+            "properties": {
+              "baseCommit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40,64}$"
+              },
+              "candidateTree": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40,64}$"
+              }
+            }
           },
-          "warnings": { "type": "array", "maxItems": 1000, "items": { "type": "string", "maxLength": 4096 } },
+          "warnings": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
           "validation": {
-            "type": "object", "additionalProperties": false, "required": ["status", "markdownOnly"],
-            "properties": { "status": { "type": "string", "minLength": 1, "maxLength": 64 }, "markdownOnly": { "type": "boolean" } }
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "markdownOnly"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "markdownOnly": {
+                "type": "boolean"
+              }
+            }
           },
-          "preparedAt": { "type": "string", "format": "date-time" },
-          "reviewedAt": { "type": ["string", "null"], "format": "date-time" },
+          "preparedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "decision": {
             "oneOf": [
-              { "type": "null" },
-              { "type": "object", "additionalProperties": false, "required": ["outcome", "decidedAt", "resultCommit"], "properties": { "outcome": { "enum": ["approved", "rejected"] }, "decidedAt": { "type": "string", "format": "date-time" }, "resultCommit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40,64}$" } } }
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "outcome",
+                  "decidedAt",
+                  "resultCommit"
+                ],
+                "properties": {
+                  "outcome": {
+                    "enum": [
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "decidedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "resultCommit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[0-9a-f]{40,64}$"
+                  }
+                }
+              }
             ]
+          }
+        }
+      }
+    },
+    "omitted": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
           }
         }
       }
