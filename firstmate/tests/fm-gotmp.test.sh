@@ -77,6 +77,14 @@ SH
 exit 0
 SH
   chmod +x "$fake/bin/fm-fleet-sync.sh"
+  # fm-task-activity-append.sh: teardown now requires durable activity
+  # publication before removing task metadata. This fixture is scoped to the
+  # older GOTMP cleanup contract, so acknowledge that independent boundary.
+  cat > "$fake/bin/fm-task-activity-append.sh" <<'SH'
+#!/usr/bin/env bash
+exit 0
+SH
+  chmod +x "$fake/bin/fm-task-activity-append.sh"
   # fm-tasks-axi-lib.sh: stub (teardown sources it). Report no backend so
   # backlog_refresh_reminder takes the plain-message path; no tasks-axi here.
   cat > "$fake/bin/fm-tasks-axi-lib.sh" <<'SH'
@@ -153,41 +161,12 @@ test_teardown_skips_gracefully_without_tasktmp() {
   # Backward compat: a meta from a pre-fix task has no tasktmp= line. Teardown must
   # not error and must not remove anything.
   local id=td-absent-z3
-  local fake="$TMP_ROOT/$id-root"
-  mkdir -p "$fake/bin/backends" "$fake/state"
-  ln -s "$TEARDOWN" "$fake/bin/fm-teardown.sh"
-  ln -s "$ROOT/bin/fm-backend.sh" "$fake/bin/fm-backend.sh"
-  ln -s "$ROOT/bin/backends/tmux.sh" "$fake/bin/backends/tmux.sh"
-  ln -s "$ROOT/bin/fm-tmux-lib.sh" "$fake/bin/fm-tmux-lib.sh"
-  ln -s "$ROOT/bin/fm-composer-lib.sh" "$fake/bin/fm-composer-lib.sh"
-  ln -s "$ROOT/bin/fm-lock-lib.sh" "$fake/bin/fm-lock-lib.sh"
-  # fm-gate-refuse-lib.sh: teardown sources it before any fleet mutation.
-  ln -s "$ROOT/bin/fm-gate-refuse-lib.sh" "$fake/bin/fm-gate-refuse-lib.sh"
-  # fm-pr-lib.sh: teardown uses its canonical task-ID validator for poll cleanup.
-  ln -s "$ROOT/bin/fm-pr-lib.sh" "$fake/bin/fm-pr-lib.sh"
-  cat > "$fake/bin/fm-guard.sh" <<'SH'
-#!/usr/bin/env bash
-exit 0
-SH
-  chmod +x "$fake/bin/fm-guard.sh"
-  cat > "$fake/bin/fm-fleet-sync.sh" <<'SH'
-#!/usr/bin/env bash
-exit 0
-SH
-  chmod +x "$fake/bin/fm-fleet-sync.sh"
-  cat > "$fake/bin/fm-tasks-axi-lib.sh" <<'SH'
-fm_tasks_axi_backend_available() { return 1; }
-SH
-  # No tasktmp= line at all.
-  cat > "$fake/state/$id.meta" <<META
-window=fakeses:fm-$id
-worktree=$TMP_ROOT/nonexistent-wt-$id
-project=$TMP_ROOT/nonexistent-proj-$id
-harness=claude
-kind=ship
-mode=no-mistakes
-yolo=off
-META
+  local fake
+  fake=$(make_fake_root "$id" "$TMP_ROOT/unused-$id")
+  # Rewrite the helper's current-format meta into a pre-fix meta with no
+  # tasktmp= line at all while retaining all other teardown dependencies.
+  grep -v '^tasktmp=' "$fake/state/$id.meta" > "$fake/state/$id.meta.tmp"
+  mv "$fake/state/$id.meta.tmp" "$fake/state/$id.meta"
   FM_HOME="$fake" bash "$fake/bin/fm-teardown.sh" "$id" >/dev/null 2>&1 \
     || fail "teardown exited non-zero when tasktmp= was absent"
   pass "fm-teardown skips gracefully when tasktmp= is absent (backward compat)"
