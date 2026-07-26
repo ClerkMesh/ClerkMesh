@@ -32,6 +32,7 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
 
   let startupPromise;
   let selectedSessionId;
+  let canonicalSessionId;
   const requests = new Map();
 
   async function start(sessionId) {
@@ -41,10 +42,9 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
     }
     // Only the trusted server-side session record crosses the launch boundary.
     const primary = await startPrimary({ session });
-    const canonicalSessionId = typeof primary?.sessionId === "string" && primary.sessionId.length > 0
+    canonicalSessionId = typeof primary?.sessionId === "string" && primary.sessionId.length > 0
       ? primary.sessionId
       : sessionId;
-    selectedSessionId = canonicalSessionId;
     return primary;
   }
 
@@ -65,7 +65,7 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
       }
 
       const promise = (async () => {
-        if (startupPromise && selectedSessionId !== sessionId) {
+        if (startupPromise && sessionId !== selectedSessionId && sessionId !== canonicalSessionId) {
           throw new ConversationWriteError("session-locked", "Session selection is locked while Primary is running.");
         }
         if (!startupPromise) {
