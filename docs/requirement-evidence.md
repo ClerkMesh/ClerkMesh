@@ -205,4 +205,4 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
 - Slice 5: **awaiting-final-captain-uat** (S5-001 through S5-007 engineering exits complete)
 - Certifications: **complete** (CERT-001 through CERT-006 have reproducible tracked genuine-runtime evidence)
-- Release Gate: **in progress** (item 1 clean init, repeated init, and unknown-state refusal passes from a clean tracked root; `evidence/release-gate/rel-001-clean-init.md`; item 2 requirement-to-test coverage is in progress, with AUTO-001 through AUTO-006 complete)
+- Release Gate: **in progress** (item 1 clean init, repeated init, and unknown-state refusal passes from a clean tracked root; `evidence/release-gate/rel-001-clean-init.md`; item 2 has exhaustive 119/119 requirement-to-test/evidence coverage with no unexplained skip; `evidence/release-gate/rel-001-requirement-coverage.md`; item 3 clean-root aggregate execution is next)
