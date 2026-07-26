@@ -10,7 +10,7 @@ Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 fro
 | CERT-002 | pass (2026-07-26) | `S1_003_LIVE=1 corepack pnpm run cert:slice1-stream-extension-ui` | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
 | CERT-003 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" CERT_003_LIVE=1 corepack pnpm run cert:worker-wake` | `evidence/certifications/cert-003-worker-runtime.md` |
 | CERT-004 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" S3_001_LIVE=1 corepack pnpm run cert:slice3-local-delivery` | `evidence/slice-3/s3-001-local-delivery.md` |
-| CERT-005 | pending | — | — |
+| CERT-005 | pass (2026-07-26) | `S5_005_LIVE=1 corepack pnpm cert:slice5-restart-reconciliation` | `evidence/slice-5/s5-005-restart-reconciliation.md` |
 | CERT-006 | pending | — | guarded destructive rerun may use only `S3_007_REMOTE_REPOSITORY`, never the product repository |
 
 ## CERT-001 observed result
@@ -41,6 +41,12 @@ ok - S3-001 genuine Pi/Herdr/Treehouse local-only delivery passed (f7cb055937c99
 
 Both commit identities belong only to the disposable certification repository.
 
+## CERT-005 observed result
+
+The genuine Learning fixture launched two real Pi extraction Agents through production Herdr endpoints, synchronized on their durable endpoint records, and then killed the separate launch-owner process with `SIGKILL`. Both Agents subsequently published successful application-owned completion markers. A fresh production reconciliation process recovered both independently as `review-ready` from persisted Proposal, Source, endpoint, and candidate authority without relaunching an Agent or inventing a Captain decision. Controlled cleanup removed the dedicated workspace and all disposable Clerk repositories, candidates, Sources, and Learning state.
+
+Observed Proposal `046080c4a7d8e94d7fd1144aa3936b9b18b353c489ad8f99e453200751507e0a` and Source `e7dc9507d8f164dd82576ec4900f74100dc2ba8e34ee2986860e78d17909aafc` existed only in the disposable certification fixture.
+
 ## Boundary
 
-This is only the fourth of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
+This is only the fifth of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.

@@ -19,4 +19,4 @@ The fixture also proves that reconciliation neither relaunches an Agent nor inve
 
 ## Genuine run recorded
 
-A genuine run produced Proposal `cb2d3c637f068bbe894bc9e834b4badec7385e3f102a4db9094ad627b0a902c3` in dedicated Herdr workspace `wY`. After the synchronized launch owner was confirmed killed by `SIGKILL`, both target completion markers identified that Proposal and the production reconciler published target states `["review-ready", "review-ready"]` with `LEARNING.md` reviews. The fixture closed its workspace and removed all temporary repositories and state.
+The fresh Release Gate rerun on 2026-07-26 produced Proposal `046080c4a7d8e94d7fd1144aa3936b9b18b353c489ad8f99e453200751507e0a` from Source `e7dc9507d8f164dd82576ec4900f74100dc2ba8e34ee2986860e78d17909aafc` in dedicated Herdr workspace `w0`. After the synchronized launch owner was confirmed killed by `SIGKILL`, both target completion markers identified that Proposal and the production reconciler published target states `["review-ready", "review-ready"]` with `LEARNING.md` reviews. The fixture closed its workspace and removed all temporary repositories and state.
