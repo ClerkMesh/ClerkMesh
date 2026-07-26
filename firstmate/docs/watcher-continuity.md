@@ -40,6 +40,12 @@ Each record includes arm and watcher PIDs, start and end timestamps, exit code a
 The file is size-capped through `FM_WATCH_CYCLE_LOG_MAX_BYTES` and `FM_WATCH_CYCLE_LOG_KEEP_LINES`.
 `state/.watch-triage.log` remains only the watcher's bounded absorbed-wake debug log and carries no lifecycle semantics.
 
+The Pi extension separately appends one JSON line per lifecycle event to `state/.pi-watch-lifecycle.jsonl`: `extension-loaded`, `session-start`, `arm-started`, `arm-closed`, `arm-error`, `stop-arm` (tagged `session-shutdown` or `process-exit`), and `session-shutdown`.
+Each row carries `observedAt`, `event`, the extension's own `extensionPid`/`parentPid`, and event-specific detail such as `armId`, `armPid`, `code`, `signal`, and a close `classification` that is omitted while the extension itself is stopping.
+This is a diagnostic trail for distinguishing why supervision stopped, not a functional signal, so its best-effort rotation must never interrupt the watcher.
+It is size-capped through `FM_WATCH_LIFECYCLE_LOG_MAX_BYTES` and `FM_WATCH_LIFECYCLE_LOG_RETAIN_LINES`, distinct from the arm layer's own cycle-log pair above.
+OpenCode's adapter does not write this log.
+
 The default 300-second grace is unchanged.
 Only the watcher process touches `state/.last-watcher-beat`; no helper process can make a wedged watcher appear healthy.
 
