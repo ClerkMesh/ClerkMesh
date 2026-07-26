@@ -4,10 +4,17 @@
   "title": "ClerkMesh conversation session catalog v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "observedAt", "sessions", "errors"],
+  "required": ["schema", "observedAt", "freshness", "provenance", "sessions", "omitted", "errors"],
   "properties": {
     "schema": { "const": "clerkmesh.conversation-sessions.v1" },
     "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority"],
+      "properties": { "authority": { "const": "pi-session-jsonl" } }
+    },
     "sessions": {
       "type": "array",
       "items": {
@@ -21,6 +28,15 @@
           "modifiedAt": { "type": "string", "format": "date-time" },
           "messageCount": { "type": "integer", "minimum": 0 }
         }
+      }
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": { "reason": { "type": "string", "minLength": 1 } }
       }
     },
     "errors": {

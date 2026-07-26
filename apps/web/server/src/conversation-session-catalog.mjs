@@ -26,7 +26,7 @@ export async function buildConversationSessionCatalog({
   const projected = [];
   const sessionsById = new Map();
   const rejectedIds = new Set();
-  const errors = [];
+  const omitted = [];
 
   for (const session of sessions) {
     try {
@@ -63,7 +63,7 @@ export async function buildConversationSessionCatalog({
       sessionsById.set(session.id, Object.freeze({ path: session.path, cwd: canonicalCwd }));
     } catch {
       // Never include rejected metadata or filesystem paths in the browser projection.
-      errors.push("A Pi session was omitted because its metadata could not be validated.");
+      omitted.push({ reason: "A Pi session was omitted because its metadata could not be validated." });
     }
   }
 
@@ -76,8 +76,11 @@ export async function buildConversationSessionCatalog({
     projection: {
       schema: SCHEMA,
       observedAt: observedAt.toISOString(),
+      freshness: "current",
+      provenance: { authority: "pi-session-jsonl" },
       sessions: projected,
-      errors,
+      omitted,
+      errors: [],
     },
     sessionsById,
   };

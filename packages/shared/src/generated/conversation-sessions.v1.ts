@@ -11,6 +11,9 @@ export interface ConversationSessionV1 {
 export interface ConversationSessionsV1 {
   schema: "clerkmesh.conversation-sessions.v1";
   observedAt: string;
+  freshness: "current" | "unknown";
+  provenance: { authority: "pi-session-jsonl" };
   sessions: ConversationSessionV1[];
+  omitted: Array<{ reason: string }>;
   errors: string[];
 }
