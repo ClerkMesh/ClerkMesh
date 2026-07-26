@@ -12,7 +12,7 @@ A prior Slice or certification pass is not, by itself, this revalidation.
 | Worker independence across Web exit | passed | The same genuine Herdr/Treehouse run retained two live endpoint facts across Web shutdown and restart; `evidence/slice-3/artifacts/s3-005-real-exit-recovery.json`. |
 | Primary exit/offline and owned-child cleanup | passed | On 2026-07-26, `corepack pnpm run cert:slice1-shutdown-offline` proved production Web shutdown terminates only its owned genuine Pi Primary, preserves an independent Worker, projects an externally terminated Primary offline, refuses further sends, and never auto-restarts it. |
 | Learning Agent owner exit and reconciliation | passed | The fresh CERT-005 Release Gate run SIGKILLed the extraction launch owner, retained both genuine Agents, and reconciled both targets from durable authority; `evidence/release-gate/rel-001-certification-revalidation.md`. |
-| Durable Clerk lifecycle crash recovery | pending fresh item-5 run | Re-run the isolated real-SIGKILL S3-006 lifecycle fixture. |
+| Durable Clerk lifecycle crash recovery | passed | On 2026-07-26, `corepack pnpm run cert:slice3-clerk-recovery` repeated the isolated real-SIGKILL S3-006 lifecycle fixture successfully. |
 
 The Primary fixture used a disposable Pi session catalog and a genuine Pi 0.82.0
 RPC child. It separately used a process tripwire to prove owned-child cleanup did
@@ -23,6 +23,17 @@ for a retry, and did not spawn a replacement.
 The genuine Web/Worker revalidation ran in a disposable canonical test root and
 used root-hash-bound Herdr workspace names. No product repository, default fleet,
 or remote repository was used.
+
+The fresh Clerk lifecycle run exercised live-lock refusal, archive and restore,
+reviewed-tree compare-and-swap, and durable crash recovery together. Its final
+case stopped and killed a real archive process after journal publication; a new
+production command recovered the requested registry transition, stale process
+lock, and journal without rewriting Git history or using a production test hook.
+All Clerk repositories and registry authority were disposable local fixtures.
+
+Release Gate item 5 is complete: Web, Primary, Worker, and Learning Agent exit
+boundaries plus durable Clerk lifecycle crash recovery all have fresh passing
+evidence from the repository root.
 
 ## Reproduction
 
@@ -41,3 +52,10 @@ corepack pnpm run cert:slice1-shutdown-offline
 
 The run must report that Web stopped only its owned real Pi Primary and that an
 offline Primary never auto-restarted.
+
+```sh
+corepack pnpm run cert:slice3-clerk-recovery
+```
+
+The run must finish with all five lifecycle suites passing and report
+`ok - S3-006 Clerk lifecycle lock, archive/restore, CAS, and kill/restart recovery certification passed`.
