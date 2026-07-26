@@ -9,3 +9,17 @@ command: S3_007_REMOTE_REPOSITORY=git@github.com:ClerkMesh/clerkmesh-cert-fixtur
 ok	direct-PR-created	https://github.com/ClerkMesh/clerkmesh-cert-fixture/pull/1
 ok	direct-PR-full-diff-reviewed	28e0e53e59526f71c383ed80befe953a694d7dde
 ok	direct-PR-squash-merged
+
+Release Gate revalidation
+run-date-utc: 2026-07-26
+repository: ClerkMesh/clerkmesh-cert-fixture (private Captain-authorized fixture)
+gh: 2.96.0
+gh-axi: 0.1.28
+git: 2.54.0
+command: S3_007_LIVE=1 corepack pnpm run cert:slice3-direct-pr
+
+ok	direct-PR-created	https://github.com/ClerkMesh/clerkmesh-cert-fixture/pull/3
+ok	direct-PR-full-diff-reviewed	1f0e2c7f2fb1795660530b023dea1fa6bf4fc5a4
+merge-commit	e411e8981596e82813c416273854c292d8c99595
+merged-at	2026-07-26T07:55:08Z
+ok	direct-PR-squash-merged

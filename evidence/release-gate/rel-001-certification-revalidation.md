@@ -1,6 +1,6 @@
 # REL-001 Release Gate item 4 — genuine certification revalidation
 
-Status: **in progress**
+Status: **passed**
 
 Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 from the repository root. A prior certification artifact is not by itself treated as this Release Gate rerun.
 
@@ -11,7 +11,7 @@ Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 fro
 | CERT-003 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" CERT_003_LIVE=1 corepack pnpm run cert:worker-wake` | `evidence/certifications/cert-003-worker-runtime.md` |
 | CERT-004 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" S3_001_LIVE=1 corepack pnpm run cert:slice3-local-delivery` | `evidence/slice-3/s3-001-local-delivery.md` |
 | CERT-005 | pass (2026-07-26) | `S5_005_LIVE=1 corepack pnpm cert:slice5-restart-reconciliation` | `evidence/slice-5/s5-005-restart-reconciliation.md` |
-| CERT-006 | pending | — | guarded destructive rerun may use only `S3_007_REMOTE_REPOSITORY`, never the product repository |
+| CERT-006 | pass (2026-07-26) | `S3_007_LIVE=1 corepack pnpm run cert:slice3-direct-pr` then `S3_007_LIVE=1 corepack pnpm run cert:slice3-no-mistakes` | `evidence/slice-3/artifacts/s3-007-real-direct-pr.txt`; `evidence/slice-3/artifacts/s3-007-real-no-mistakes.txt` |
 
 ## CERT-001 observed result
 
@@ -47,6 +47,10 @@ The genuine Learning fixture launched two real Pi extraction Agents through prod
 
 Observed Proposal `046080c4a7d8e94d7fd1144aa3936b9b18b353c489ad8f99e453200751507e0a` and Source `e7dc9507d8f164dd82576ec4900f74100dc2ba8e34ee2986860e78d17909aafc` existed only in the disposable certification fixture.
 
+## CERT-006 observed result
+
+Using only the Captain-authorized private `ClerkMesh/clerkmesh-cert-fixture` repository, the guarded production fixtures created, completely diff-reviewed, and squash-merged direct-PR PR #3 and no-mistakes PR #4. The direct-PR head was `1f0e2c7f2fb1795660530b023dea1fa6bf4fc5a4`. The genuine no-mistakes v1.41.2 pipeline completed intent, rebase, review, test, document, lint, push, PR, and CI gates with no findings; its reviewed head `1664829f1f80dd8db804d96d3f532e9e2078324d` retained the certified input commit. Both branch-specific PRs reached `MERGED`, and no product repository was used.
+
 ## Boundary
 
-This is only the fifth of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
+All six genuine certifications have now been freshly revalidated, completing Release Gate item 4. This does not by itself complete REL-001 or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
