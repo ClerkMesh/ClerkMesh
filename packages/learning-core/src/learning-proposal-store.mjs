@@ -196,7 +196,13 @@ export async function approveLearningTarget({ root, proposalId, targetName, deci
   } catch {
     throw new Error("Learning target HEAD changed during compare-and-swap approval");
   }
-  const decision = { outcome: "approved", decidedAt, identity: structuredClone(target.review.identity), resultCommit };
+  const decision = {
+    outcome: "approved",
+    decidedAt,
+    actor: { type: "captain", id: "local" },
+    identity: structuredClone(target.review.identity),
+    resultCommit,
+  };
   manifest.targets[targetIndex] = { ...target, state: "approved", review: { ...target.review, reviewedAt: decidedAt }, decision };
   resolveProposalIfDecided(manifest, decidedAt);
   await publishManifest(manifestPath, manifest);
@@ -238,6 +244,7 @@ export async function rejectLearningTarget({ root, proposalId, targetName, reaso
   const decision = {
     outcome: "rejected",
     decidedAt,
+    actor: { type: "captain", id: "local" },
     reason: reason.trim(),
     identity: structuredClone(target.review.identity),
     resultCommit: null,

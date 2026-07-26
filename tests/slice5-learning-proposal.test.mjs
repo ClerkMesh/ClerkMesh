@@ -201,6 +201,7 @@ try {
   assert.deepEqual(rejected.decision, {
     outcome: "rejected",
     decidedAt: "2026-03-01T00:06:45.000Z",
+    actor: { type: "captain", id: "local" },
     reason: "Not appropriate for this Clerk",
     identity: betaReview.identity,
     resultCommit: null,
@@ -269,6 +270,7 @@ try {
   assert.equal(approved.state, "approved");
   assert.deepEqual(approved.decision.identity, approvalReview.identity);
   assert.equal(approved.decision.outcome, "approved");
+  assert.deepEqual(approved.decision.actor, { type: "captain", id: "local" });
   assert.match(approved.decision.resultCommit, /^[0-9a-f]{40,64}$/);
   assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD"])).stdout.trim(), approved.decision.resultCommit);
   assert.equal((await exec("git", ["-C", alpha, "rev-parse", "HEAD^"])).stdout.trim(), advancedHead);
