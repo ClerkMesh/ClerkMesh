@@ -50,7 +50,15 @@ export async function projectLearningReviews({ proposalRoot, observedAt = new Da
     const manifest = JSON.parse(bytes.toString("utf8"));
     if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== id || !Array.isArray(manifest.targets)) throw new Error("invalid Learning Proposal manifest");
     const targets = manifest.targets.map(reviewTarget).filter(Boolean);
-    if (targets.length > 0) proposals.push(Object.freeze({ id, state: manifest.state, createdAt: manifest.createdAt, resolvedAt: manifest.resolvedAt ?? null, targets }));
+    if (targets.length > 0) proposals.push(Object.freeze({ schema: "learning-proposal.v1", id, state: manifest.state, createdAt: manifest.createdAt, resolvedAt: manifest.resolvedAt ?? null, targets }));
   }
-  return Object.freeze({ schema: "clerkmesh.learning-review-catalog.v1", observedAt, proposals });
+  return Object.freeze({
+    schema: "learning-list.v1",
+    observedAt,
+    freshness: "current",
+    provenance: { authority: "clerkmesh-learning-proposals" },
+    proposals,
+    omitted: [],
+    errors: [],
+  });
 }

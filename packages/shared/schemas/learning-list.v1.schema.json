@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "learning-list.v1.schema.json",
+  "title": "Learning Review List v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observedAt", "freshness", "provenance", "proposals", "omitted", "errors"],
+  "properties": {
+    "schema": { "const": "learning-list.v1" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "unknown"] },
+    "provenance": { "type": "object", "additionalProperties": false, "required": ["authority"], "properties": { "authority": { "const": "clerkmesh-learning-proposals" } } },
+    "proposals": { "type": "array", "maxItems": 1000, "items": { "$ref": "learning-proposal.v1.schema.json" } },
+    "omitted": { "type": "array", "maxItems": 1000, "items": { "type": "object", "additionalProperties": false, "required": ["reason"], "properties": { "proposalId": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "reason": { "type": "string", "minLength": 1, "maxLength": 4096 } } } },
+    "errors": { "type": "array", "maxItems": 1000, "items": { "type": "object", "additionalProperties": false, "required": ["reason"], "properties": { "reason": { "type": "string", "minLength": 1, "maxLength": 4096 } } } }
+  }
+}

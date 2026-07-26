@@ -19,6 +19,10 @@ const taskGraphSchemaUrl = new URL("../../../../packages/shared/schemas/fm-task-
 const taskGraphSchema = JSON.parse(await readFile(taskGraphSchemaUrl, "utf8"));
 const taskDetailSchemaUrl = new URL("../../../../packages/shared/schemas/clerkmesh-task-detail.v1.schema.json", import.meta.url);
 const taskDetailSchema = JSON.parse(await readFile(taskDetailSchemaUrl, "utf8"));
+const learningProposalSchemaUrl = new URL("../../../../packages/shared/schemas/learning-proposal.v1.schema.json", import.meta.url);
+const learningProposalSchema = JSON.parse(await readFile(learningProposalSchemaUrl, "utf8"));
+const learningListSchemaUrl = new URL("../../../../packages/shared/schemas/learning-list.v1.schema.json", import.meta.url);
+const learningListSchema = JSON.parse(await readFile(learningListSchemaUrl, "utf8"));
 const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function isLoopbackAuthority(value, scheme = "http:") {
@@ -64,6 +68,8 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   const validateProjectCatalog = ajv.compile(projectCatalogSchema);
   const validateTaskGraph = ajv.compile(taskGraphSchema);
   const validateTaskDetail = ajv.compile(taskDetailSchema);
+  ajv.addSchema(learningProposalSchema);
+  const validateLearningList = ajv.compile(learningListSchema);
   if (clerkCatalog !== undefined && typeof clerkCatalog !== "function") {
     throw new TypeError("clerkCatalog must be a function");
   }
@@ -134,7 +140,9 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   if (learningReviews !== undefined) {
     app.get("/api/reviews/learning", async (_request, reply) => {
       try {
-        return await learningReviews();
+        const projection = await learningReviews();
+        if (!validateLearningList(projection)) throw new Error("invalid Learning review projection");
+        return projection;
       } catch {
         return reply.code(503).send({ error: "Learning reviews are unavailable." });
       }

@@ -21,8 +21,11 @@ const manifest = {
 await writeFile(path.join(root, id, "manifest.json"), JSON.stringify(manifest));
 
 const catalog = await projectLearningReviews({ proposalRoot: root, observedAt: "2026-01-01T00:02:00.000Z" });
-assert.equal(catalog.schema, "clerkmesh.learning-review-catalog.v1");
+assert.equal(catalog.schema, "learning-list.v1");
+assert.equal(catalog.freshness, "current");
+assert.deepEqual(catalog.provenance, { authority: "clerkmesh-learning-proposals" });
 assert.equal(catalog.proposals.length, 1);
+assert.equal(catalog.proposals[0].schema, "learning-proposal.v1");
 assert.equal(catalog.proposals[0].targets.length, 1, "only materialized reviews are exposed");
 assert.deepEqual(catalog.proposals[0].targets[0].changedPaths, ["LEARNING.md"]);
 assert.equal(catalog.proposals[0].targets[0].source.preview, "Captain evidence");
