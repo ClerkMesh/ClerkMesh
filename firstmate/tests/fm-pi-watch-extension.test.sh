@@ -970,7 +970,13 @@ EOF
   status=$?
   expect_code 0 "$status" "Pi cleanup fallback listener must install once and unregister on session shutdown"
   [ -z "$out" ] || fail "Pi listener-lifecycle test printed output: $out"
-  pass "Pi process-exit cleanup listener has a bounded lifecycle"
+  grep -q '"event":"extension-loaded"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not record extension load"
+  grep -q '"event":"session-shutdown"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not identify session shutdown"
+  grep -q '"event":"stop-arm".*"reason":"session-shutdown"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not attribute watcher stop to session shutdown"
+  pass "Pi process-exit cleanup listener has a bounded, diagnosed lifecycle"
 }
 
 test_pi_process_exit_cleanup_stops_arm_child() {
