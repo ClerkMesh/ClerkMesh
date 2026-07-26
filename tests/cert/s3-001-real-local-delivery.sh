@@ -30,12 +30,18 @@ trap cleanup EXIT INT TERM
 fm_herdr_lab_prepare "$SESSION" || fail "could not prepare isolated Herdr session"
 
 mkdir -p "$HOME_ROOT/data/$TASK" "$HOME_ROOT/state" "$HOME_ROOT/config" "$HOME_ROOT/projects"
-printf '%s\n' '- local-delivery [local-only] - isolated S3-001 certification' > "$HOME_ROOT/data/projects.md"
-mkdir "$PROJECT"
-git -C "$PROJECT" init -q -b main
+: > "$HOME_ROOT/data/projects.md"
+INIT_RESULT=$(FM_HOME="$HOME_ROOT" "$FM_ROOT/bin/fm-project-init.sh" local-delivery 'isolated S3-001 certification') \
+  || fail "deterministic Project init failed"
+case "$INIT_RESULT" in local-delivery$'\t'local-only$'\t'[0-9a-f]*) ;; *) fail "Project init returned malformed evidence" ;; esac
+[ "$(git -C "$PROJECT" branch --show-current)" = main ] || fail "Project init did not create main"
+[ "$(git -C "$PROJECT" log -1 --format=%s)" = 'Initial local project baseline' ] || fail "Project init did not create its fixed baseline"
+[ "$(cat "$PROJECT/README.md")" = $'# local-delivery\n\nLocal ClerkMesh project.' ] || fail "Project init did not create its fixed README"
+[ -z "$(git -C "$PROJECT" remote)" ] || fail "local-only Project init unexpectedly created a remote"
+grep -Fx -- '- local-delivery [local-only] - isolated S3-001 certification' "$HOME_ROOT/data/projects.md" >/dev/null \
+  || fail "Project init did not register the Project last"
 git -C "$PROJECT" config user.name 'ClerkMesh Certification'
 git -C "$PROJECT" config user.email 'cert@example.invalid'
-printf '# Local delivery certification\n' > "$PROJECT/README.md"
 cat > "$PROJECT/complete-local-delivery.sh" <<'SCRIPT'
 #!/usr/bin/env bash
 set -eu
@@ -45,8 +51,8 @@ git add result.md
 git commit -qm 'Complete genuine local delivery'
 SCRIPT
 chmod +x "$PROJECT/complete-local-delivery.sh"
-git -C "$PROJECT" add README.md complete-local-delivery.sh
-git -C "$PROJECT" commit -qm baseline
+git -C "$PROJECT" add complete-local-delivery.sh
+git -C "$PROJECT" commit -qm 'Add certification validation command'
 BASE=$(git -C "$PROJECT" rev-parse HEAD)
 cat > "$HOME_ROOT/data/$TASK/brief.md" <<'BRIEF'
 # Task
