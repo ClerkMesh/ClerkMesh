@@ -73,7 +73,11 @@ neutral_fm_root() {  # <dir> -> echoes a minimal root with a quiet guard
 #!/usr/bin/env bash
 exit 0
 SH
-  chmod +x "$root/bin/fm-guard.sh"
+  cat > "$root/bin/fm-task-activity-append.sh" <<'SH'
+#!/usr/bin/env bash
+exit 0
+SH
+  chmod +x "$root/bin/fm-guard.sh" "$root/bin/fm-task-activity-append.sh"
   printf '%s\n' "$root"
 }
 
