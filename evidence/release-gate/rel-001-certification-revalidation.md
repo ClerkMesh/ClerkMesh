@@ -8,7 +8,7 @@ Release Gate item 4 requires fresh revalidation of CERT-001 through CERT-006 fro
 |---|---|---|---|
 | CERT-001 | pass (2026-07-26) | `G0_003_LIVE=1 corepack pnpm run cert:gate0-primary-lock` | `evidence/gate-0/artifacts/g0-003-real-web-tui.txt` |
 | CERT-002 | pass (2026-07-26) | `S1_003_LIVE=1 corepack pnpm run cert:slice1-stream-extension-ui` | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
-| CERT-003 | pending | — | — |
+| CERT-003 | pass (2026-07-26) | `PATH="$PWD/cache/bin:$PATH" CERT_003_LIVE=1 corepack pnpm run cert:worker-wake` | `evidence/certifications/cert-003-worker-runtime.md` |
 | CERT-004 | pending | — | — |
 | CERT-005 | pending | — | — |
 | CERT-006 | pending | — | guarded destructive rerun may use only `S3_007_REMOTE_REPOSITORY`, never the product repository |
@@ -25,6 +25,10 @@ The production fixture started a genuine Pi 0.82.0 RPC Primary with the canonica
 
 The fixture now synchronizes on protocol facts rather than exact model wording: it requires a new assistant message and a new settled event after the prompt, plus genuine tool diagnostics. This avoids treating provider phrasing variability as a certification failure while retaining all CERT-002 assertions.
 
+## CERT-003 observed result
+
+The isolated genuine-runtime fixture spawned a real Pi 0.82.0 Worker through Firstmate into a dedicated, test-root-bound Herdr workspace. The Worker invoked the production Task status command with the exact Captain-relevant `needs-decision` summary. Firstmate's production watcher discovered the status, durably queued its status key, and the production wake drain returned the exact Worker-authored summary and consumed the queue. Controlled cleanup removed the Worker worktree, dedicated Herdr session, and disposable Firstmate and Project authority.
+
 ## Boundary
 
-This is only the second of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
+This is only the third of six Release Gate certification reruns. It does not complete item 4, REL-001, or the Release Candidate, and it does not alter the `awaiting-final-captain-uat` status of Slice 4 or Slice 5.
