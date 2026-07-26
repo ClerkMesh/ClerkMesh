@@ -151,6 +151,7 @@ Foreground Node Web process
 - **LIFE-003**：写操作共用 `clerkmesh-state/clerk-lifecycle.lock` 短锁；live PID 不得被夺锁。
 - **LIFE-004**：transaction journal、atomic registry rename、staged repository publish 和 Git `update-ref` compare-and-swap 必须支持 crash recovery，不得重写历史或删除导入源。
 - **LIFE-005**：Web 只消费单独的版本化 `clerk-catalog.v1`，不得解析 registry Markdown。
+- **LIFE-006**：Clerk bootstrap 是 Captain 审阅下的 Primary 控制面操作，不要求先选择 Clerk、Escalation、Task、Brief 或 Worker。Primary 必须先验证并展示绑定名称、完整内容和 SHA-256 inventory 的草案；Captain 明确批准同一草案后只能通过 canonical lifecycle CLI 创建、Git 批准并原子注册。任何内容变化必须重新批准，bootstrap 不得执行该 Clerk 的专业工作。
 
 ### 7.3 Primary selection 与 brief
 
@@ -158,7 +159,7 @@ Foreground Node Web process
 - **EXEC-002**：launcher 在 writable Primary 可用前必须通过 `get_commands` 验证 `/clerkmesh-status`；Extension 缺失不得降级运行。
 - **EXEC-003**：Extension 只注入行为规则，不得选择 Clerk、修改输入、拦截 spawn、写 brief/`.meta` 或维护 assignment。
 - **EXEC-004**：每次新执行前，Primary 必须按 candidates → shortlist → semantic selection → brief compile 渐进选择；匹配不得变成标签评分器、向量路由或持久 owner。
-- **EXEC-005**：无法理解、安全拆分或完整匹配的请求必须留在 Primary 对话澄清。只有 Captain 明确选择亲自处理时才能选 Escalation Clerk。
+- **EXEC-005**：无法理解、安全拆分或完整匹配的请求必须留在 Primary 对话澄清。只有 Captain 明确选择亲自处理时才能选 Escalation Clerk。Clerk 与受保护的本地 Project bootstrap 是建立执行环境的 Primary 控制面操作，不得因缺少可选 Clerk 路由到 Escalation 或制造递归 Task。
 - **EXEC-006**：默认自动规划和选择；Captain 明确要求时，执行前必须展示拆分、所选 Clerk、理由和边界并等待回应。
 - **EXEC-007**：标准 `clerkmesh.execution-context.v1` 使用 canonical JSON 的 base64 与 SHA-256，固定 Task ID、Clerk name/execution/commit、身份、选择信息及 allowlist path/blob OID。
 - **EXEC-008**：compile 时 Clerk commit 必须仍等于批准 HEAD，并原子写入现有 Firstmate brief；不得复制资料正文或建立 assignment 文件。

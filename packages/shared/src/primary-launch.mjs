@@ -87,9 +87,14 @@ export function buildPrimaryLaunch(mode) {
     );
   }
   const argv = mode === "rpc" ? [...commonArgv, "--mode", "rpc"] : commonArgv;
+  const productBin = resolve(clerkmeshRoot, "node_modules/.bin");
+  if (!isDirectoryWithoutSymlink(productBin)) {
+    throw new Error("ClerkMesh runtime dependencies are unavailable; run corepack pnpm install --frozen-lockfile");
+  }
   const env = {
     ...process.env,
     ...canonicalEnvironment,
+    PATH: `${productBin}${delimiter}${process.env.PATH ?? ""}`,
     CLERKMESH_PRIMARY_MODE: mode,
   };
   const executable = findExecutable("pi");

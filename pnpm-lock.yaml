@@ -7,10 +7,11 @@ settings:
 importers:
 
   .:
-    devDependencies:
+    dependencies:
       tasks-axi:
         specifier: 0.2.3
         version: 0.2.3
+    devDependencies:
       ws:
         specifier: ^8.21.1
         version: 8.21.1

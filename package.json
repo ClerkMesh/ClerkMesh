@@ -47,8 +47,10 @@
     "cert:worker-wake": "bash tests/cert/cert-003-real-worker-wake.sh",
     "cert:production-browser-security": "node tests/cert/sec-001-production-browser-security.mjs"
   },
+  "dependencies": {
+    "tasks-axi": "0.2.3"
+  },
   "devDependencies": {
-    "tasks-axi": "0.2.3",
     "ws": "^8.21.1"
   }
 }

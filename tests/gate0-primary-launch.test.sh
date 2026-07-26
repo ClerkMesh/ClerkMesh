@@ -20,7 +20,7 @@ FAKEBIN="$TMP/fakebin"
 CAPTURE="$TMP/capture"
 mkdir -p "$FIXTURE/bin" "$FIXTURE/firstmate/.pi/extensions" \
   "$FIXTURE/apps/web/server" "$FIXTURE/packages/shared/src" \
-  "$FIXTURE/packages/pi-primary-extension" "$FAKEBIN" "$CAPTURE"
+  "$FIXTURE/packages/pi-primary-extension" "$FIXTURE/node_modules/.bin" "$FAKEBIN" "$CAPTURE"
 cp "$ROOT/bin/clerkmesh" "$FIXTURE/bin/clerkmesh"
 cp "$ROOT/apps/web/server/gate0-cert-server.mjs" "$FIXTURE/apps/web/server/gate0-cert-server.mjs"
 cp "$ROOT/packages/shared/src/primary-launch.mjs" "$FIXTURE/packages/shared/src/primary-launch.mjs"
@@ -37,7 +37,7 @@ set -eu
 out="${CAPTURE_DIR:?}/${CLERKMESH_PRIMARY_MODE:?}.launch"
 {
   printf 'cwd=%s\n' "$(pwd -P)"
-  for name in CLERKMESH_ROOT CLERKMESH_DATA CLERKMESH_STATE CLERKMESH_CLERKS CLERKMESH_CACHE FM_ROOT_OVERRIDE FM_HOME; do
+  for name in CLERKMESH_ROOT CLERKMESH_DATA CLERKMESH_STATE CLERKMESH_CLERKS CLERKMESH_CACHE FM_ROOT_OVERRIDE FM_HOME PATH; do
     eval "value=\${$name}"
     printf 'env:%s=%s\n' "$name" "$value"
   done
@@ -140,6 +140,7 @@ for mode in tui rpc; do
     "FM_HOME=$expected_home"; do
     grep -Fxq "env:$assignment" "$launch" || fail "$mode did not inject canonical absolute $assignment"
   done
+  grep -Fq "env:PATH=$expected_root/node_modules/.bin:" "$launch" || fail "$mode did not expose product-owned runtime tools first on PATH"
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-turnend-guard.ts" "$launch" || fail "$mode omitted the turn-end extension"
   grep -Fxq "arg:$expected_home/.pi/extensions/fm-primary-pi-watch.ts" "$launch" || fail "$mode omitted the watcher extension"
   grep -Fxq "arg:$expected_primary_extension" "$launch" || fail "$mode omitted the ClerkMesh Primary extension"
