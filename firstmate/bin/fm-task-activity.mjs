@@ -31,7 +31,7 @@ try {
   for (let index = 0; index < lines.length; index++) {
     const record = JSON.parse(lines[index]);
     const keys = Object.keys(record).sort().join(",");
-    if (keys !== "cursor,observedAt,occurredAt,summary,type" || record.cursor !== index + 1 || !eventTypes.has(record.type) || typeof record.summary !== "string" || record.summary.length < 1 || record.summary.length > 1000 || typeof record.observedAt !== "string" || Number.isNaN(Date.parse(record.observedAt)) || !(record.occurredAt === null || (typeof record.occurredAt === "string" && !Number.isNaN(Date.parse(record.occurredAt))))) throw new Error("record");
+    if (!["cursor,observedAt,occurredAt,summary,type", "actor,cursor,observedAt,occurredAt,summary,type"].includes(keys) || (record.actor !== undefined && (record.actor?.type !== "captain" || record.actor?.id !== "local" || Object.keys(record.actor).sort().join(",") !== "id,type")) || record.cursor !== index + 1 || !eventTypes.has(record.type) || typeof record.summary !== "string" || record.summary.length < 1 || record.summary.length > 1000 || typeof record.observedAt !== "string" || Number.isNaN(Date.parse(record.observedAt)) || !(record.occurredAt === null || (typeof record.occurredAt === "string" && !Number.isNaN(Date.parse(record.occurredAt))))) throw new Error("record");
     records.push(record);
   }
   output.cursor = records.length;

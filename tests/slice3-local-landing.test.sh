@@ -65,8 +65,21 @@ const fs = require("fs");
 const events = fs.readFileSync(process.argv[1], "utf8").trim().split("\n").map(JSON.parse);
 if (events[0].cursor !== 1 || events[0].type !== "delivery-reviewed" || events[0].summary !== "Authoritative Task delivery diff reviewed") process.exit(1);
 if (events[1].cursor !== 2 || events[1].type !== "landed" || events[1].summary !== "Task candidate landed by fast-forward") process.exit(1);
+if (JSON.stringify(events[1].actor) !== JSON.stringify({type: "captain", id: "local"}) || "actor" in events[0]) process.exit(1);
 if (events.some((event) => event.occurredAt !== null || Number.isNaN(Date.parse(event.observedAt)))) process.exit(1);
 ' "$ACTIVITY" || { echo 'review or landing activity event was malformed' >&2; exit 1; }
+
+TASK=land-yolo
+WT=$(make_task "$TASK" on)
+printf 'automated result\n' > "$WT/automated.txt"
+git -C "$WT" add automated.txt
+git -C "$WT" commit -qm automated
+FM_ROOT_OVERRIDE="$ROOT/firstmate" FM_HOME="$HOME_ROOT" FM_STATE_OVERRIDE="$STATE" \
+  "$ROOT/firstmate/bin/fm-merge-local.sh" "$TASK" >/dev/null
+node -e '
+const event = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8").trim());
+if (event.type !== "landed" || "actor" in event) process.exit(1);
+' "$HOME_ROOT/data/$TASK/activity.jsonl" || { echo 'yolo landing falsely recorded a Captain actor' >&2; exit 1; }
 
 TASK=land-diverged
 WT=$(make_task "$TASK" on)

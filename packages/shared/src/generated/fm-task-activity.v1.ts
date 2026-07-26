@@ -9,6 +9,7 @@ export interface FmTaskActivityEventV1 {
   observedAt: string;
   occurredAt: string | null;
   summary: string;
+  actor?: { type: "captain"; id: "local" };
 }
 
 export interface FmTaskActivityV1 {

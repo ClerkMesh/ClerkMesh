@@ -8,8 +8,9 @@ Requirement: every durable V1 decision records the fixed provenance object
 ```sh
 rg -n 'captain/local|"captain","id":"local"|captain-approved|decision =|clerkmesh-provenance' \
   packages firstmate/bin evidence/slice-{3,4,5}
-corepack pnpm run test:slice4
-corepack pnpm run test:slice5
+corepack pnpm run test:slice3-project-catalog
+corepack pnpm run test:slice4-human
+corepack pnpm run test:slice5-learning
 ```
 
 ## Persisted decision boundaries
@@ -19,7 +20,7 @@ corepack pnpm run test:slice5
 | Human Clerk result acceptance, rejection, or incompleteness | Firstmate Task `report.md` | Complete: report contains `{"actor":{"type":"captain","id":"local"}}` | `packages/clerk-cli/bin/clerk-human-report.sh`; `evidence/slice-4/s4-001-human-execution.md` |
 | Learning target approval | Learning Proposal target decision | Complete: decision object contains `actor:{type:"captain",id:"local"}` | `packages/learning-core/src/learning-proposal-store.mjs`; `evidence/slice-5/s5-006-test-captain-decisions.md` |
 | Learning target rejection | Learning Proposal target decision | Complete: decision object contains the same fixed actor | same as approval |
-| Explicit local-only delivery approval (`yolo=off`) | Firstmate Task delivery/activity authority plus landed Git commit | **Gap:** `--captain-approved` gates the fast-forward, but the persisted `landed` activity event does not distinguish explicit Captain approval from `yolo=on` automation and records no actor | `firstmate/bin/fm-merge-local.sh`; `evidence/slice-3/s3-001-local-delivery.md` |
+| Explicit local-only delivery approval (`yolo=off`) | Firstmate Task delivery/activity authority plus landed Git commit | Complete: `--captain-approved` produces a `landed` event containing `actor:{type:"captain",id:"local"}`, while `yolo=on` automated landing omits `actor` and therefore cannot falsely claim a Captain decision | `firstmate/bin/fm-merge-local.sh`; `tests/slice3-local-landing.test.sh`; `evidence/slice-3/s3-001-local-delivery.md` |
 
 ## Exclusions
 
@@ -36,7 +37,7 @@ carry the same fixed actor object.
 
 ## Result
 
-OWN-003 remains in progress. The next implementation unit is to persist actor
-provenance for explicit local-only landing approval while retaining a distinct
-non-Captain representation for `yolo=on` automated landing. This inventory must
-be updated if another durable V1 decision boundary is introduced.
+OWN-003 is complete. Every currently persisted V1 Captain decision carries the
+same fixed local actor object, while automated local landing remains explicitly
+non-Captain by omitting that actor. This inventory must be updated if another
+durable V1 decision boundary is introduced.

@@ -40,8 +40,15 @@
         "type": { "enum": ["task-created", "dependency-changed", "dispatch-started", "worker-status-observed", "validation-recorded", "decision-requested", "decision-recorded", "delivery-reviewed", "landed", "teardown-recorded", "failed"] },
         "observedAt": { "type": "string", "format": "date-time" },
         "occurredAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
-        "summary": { "$ref": "#/$defs/nonempty" }
+        "summary": { "$ref": "#/$defs/nonempty" },
+        "actor": { "$ref": "#/$defs/captainActor" }
       }
+    },
+    "captainActor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": { "type": { "const": "captain" }, "id": { "const": "local" } }
     },
     "notice": {
       "type": "object",
