@@ -1,7 +1,7 @@
 // Firstmate primary watcher bridge for Pi.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
@@ -65,12 +65,15 @@ const state = process.env.FM_STATE_OVERRIDE || `${fmHome}/state`;
 const config = process.env.FM_CONFIG_OVERRIDE || `${fmHome}/config`;
 const armScript = `${fmRoot}/bin/fm-watch-arm.sh`;
 const marker = `${state}/.pi-watch-extension-loaded`;
+const lifecycleLog = `${state}/.pi-watch-lifecycle.jsonl`;
 const extensionVersion = `sha256:${createHash("sha256").update(readFileSync(extensionFile)).digest("hex")}`;
 const retryBaseMs = positiveInteger("FM_WATCH_REARM_RETRY_BASE_MS", 250);
 const retryMaxMs = positiveInteger("FM_WATCH_REARM_RETRY_MAX_MS", 4000);
 const retryLimit = positiveInteger("FM_WATCH_REARM_RETRY_LIMIT", 5);
 const armReadyTimeoutMs = positiveInteger("FM_PI_ARM_READY_TIMEOUT_MS", 12000);
 const armRetireTimeoutMs = positiveInteger("FM_WATCH_ARM_RETIRE_TIMEOUT_MS", 1000);
+const lifecycleLogMaxBytes = positiveInteger("FM_WATCH_LIFECYCLE_LOG_MAX_BYTES", 262144);
+const lifecycleLogRetainLines = positiveInteger("FM_WATCH_LIFECYCLE_LOG_RETAIN_LINES", 2000);
 const repairOnlyHint = "call fm_watch_arm_pi again only after a later notification says the cycle is missing, failed, or unhealthy";
 
 let child: ChildProcess | null = null;
@@ -118,6 +121,41 @@ function lockOwnership(): LockOwnership {
     if (!pid || pid === "1") break;
   }
   return pidAlive(lockPid) ? "other" : "missing";
+}
+
+function rotateLifecycleLogIfNeeded(): void {
+  let size = 0;
+  try {
+    size = statSync(lifecycleLog).size;
+  } catch {
+    return;
+  }
+  if (size < lifecycleLogMaxBytes) return;
+  try {
+    const lines = readFileSync(lifecycleLog, "utf8").split("\n").filter((line) => line.length > 0);
+    const retained = lines.slice(-lifecycleLogRetainLines).join("\n");
+    const tmpPath = `${lifecycleLog}.tmp`;
+    writeFileSync(tmpPath, retained ? `${retained}\n` : "");
+    renameSync(tmpPath, lifecycleLog);
+  } catch {
+    // Rotation is best-effort and must never interrupt watcher supervision.
+  }
+}
+
+function logLifecycle(event: string, details: Record<string, unknown> = {}): void {
+  try {
+    mkdirSync(state, { recursive: true });
+    appendFileSync(lifecycleLog, `${JSON.stringify({
+      observedAt: new Date().toISOString(),
+      event,
+      extensionPid: process.pid,
+      parentPid: process.ppid,
+      ...details,
+    })}\n`);
+    rotateLifecycleLogIfNeeded();
+  } catch {
+    // Diagnostics must never interrupt watcher supervision or shutdown.
+  }
 }
 
 function markLoaded(): void {
@@ -179,16 +217,18 @@ export default function (pi: ExtensionAPI) {
     !calmPresentation.stockExportRendering &&
     !calmTranscriptClassIsVisible(itemClass);
 
-  function stopArm(): void {
+  function stopArm(reason: "session-shutdown" | "process-exit"): void {
     stopping = true;
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
-    if (child) child.kill("SIGTERM");
+    const armPid = child?.pid ?? null;
+    const termSent = child ? child.kill("SIGTERM") : false;
+    logLifecycle("stop-arm", { reason, armPid, termSent });
     child = null;
   }
 
   const cleanupOnProcessExit = () => {
-    stopArm();
+    stopArm("process-exit");
   };
   process.once("exit", cleanupOnProcessExit);
 
@@ -330,6 +370,7 @@ export default function (pi: ExtensionAPI) {
       stdio: ["ignore", "pipe", "pipe"],
     });
     child = armChild;
+    logLifecycle("arm-started", { armId: id, armPid: armChild.pid ?? null, predecessorArmPid });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -371,8 +412,18 @@ export default function (pi: ExtensionAPI) {
       resolveClosed();
       settleReadiness(false);
       releaseChild();
-      if (stopping) return;
-      const classification = classifyClose(stdout, stderr, code, signal);
+      const classification = stopping ? null : classifyClose(stdout, stderr, code, signal);
+      logLifecycle("arm-closed", {
+        armId: id,
+        armPid: armChild.pid ?? null,
+        code,
+        signal,
+        extensionStopping: stopping,
+        ...(classification
+          ? { classification: classification.kind, classificationMessage: classification.message.slice(0, 500) }
+          : {}),
+      });
+      if (stopping || !classification) return;
       const predecessor = String(armChild.pid ?? "");
       if (classification.kind === "actionable") {
         retryFailures = 0;
@@ -396,6 +447,12 @@ export default function (pi: ExtensionAPI) {
       resolveClosed();
       settleReadiness(false);
       releaseChild();
+      logLifecycle("arm-error", {
+        armId: id,
+        armPid: armChild.pid ?? null,
+        message: error.message,
+        extensionStopping: stopping,
+      });
       if (stopping) return;
       if (restoring) return;
       scheduleRetry(`watcher: FAILED - Pi extension arm child ${id} failed: ${error.message}`, String(armChild.pid ?? ""));
@@ -408,9 +465,11 @@ export default function (pi: ExtensionAPI) {
 
   pi.on?.("session_start", () => {
     markLoaded();
+    logLifecycle("session-start", { ownership: lockOwnership(), extensionVersion });
   });
   pi.on?.("session_shutdown", () => {
-    stopArm();
+    logLifecycle("session-shutdown");
+    stopArm("session-shutdown");
     process.off("exit", cleanupOnProcessExit);
   });
 
@@ -467,4 +526,5 @@ export default function (pi: ExtensionAPI) {
   });
 
   markLoaded();
+  logLifecycle("extension-loaded", { ownership: lockOwnership(), extensionVersion });
 }

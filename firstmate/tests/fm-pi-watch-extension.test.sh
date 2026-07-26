@@ -970,7 +970,13 @@ EOF
   status=$?
   expect_code 0 "$status" "Pi cleanup fallback listener must install once and unregister on session shutdown"
   [ -z "$out" ] || fail "Pi listener-lifecycle test printed output: $out"
-  pass "Pi process-exit cleanup listener has a bounded lifecycle"
+  grep -q '"event":"extension-loaded"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not record extension load"
+  grep -q '"event":"session-shutdown"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not identify session shutdown"
+  grep -q '"event":"stop-arm".*"reason":"session-shutdown"' "$home/state/.pi-watch-lifecycle.jsonl" \
+    || fail "Pi lifecycle log did not attribute watcher stop to session shutdown"
+  pass "Pi process-exit cleanup listener has a bounded, diagnosed lifecycle"
 }
 
 test_pi_process_exit_cleanup_stops_arm_child() {
@@ -1028,6 +1034,139 @@ EOF
     fail "Pi arm child $pid survived process-exit cleanup"
   fi
   pass "Pi process-exit cleanup stops the attached arm child"
+}
+
+test_pi_lifecycle_log_records_close_classification() {
+  local repo home plugin log stop out status
+  repo="$TMP_ROOT/pi-lifecycle-classify-root"
+  home="$TMP_ROOT/pi-lifecycle-classify-home"
+  log="$TMP_ROOT/pi-lifecycle-classify.log"
+  stop="$TMP_ROOT/pi-lifecycle-classify.stop"
+  mkdir -p "$repo/bin" "$home/state" "$home/config"
+  install_pi_watch_extension_fixture "$repo"
+  plugin="$repo/.pi/extensions/fm-primary-pi-watch.ts"
+  cat > "$repo/bin/fm-watch-arm.sh" <<'SH'
+#!/usr/bin/env bash
+printf 'arm=%s\n' "$$" >> "${FM_ARM_LOG:?}"
+count=$(wc -l < "$FM_ARM_LOG" | tr -d '[:space:]')
+printf 'watcher: started pid=%s (beacon fresh)\n' "$$"
+if [ "$count" -eq 1 ]; then
+  printf 'signal: synthetic classified wake\n'
+  exit 0
+fi
+trap 'exit 0' TERM INT
+while [ ! -e "$FM_STOP_FILE" ]; do sleep 0.02; done
+SH
+  chmod +x "$repo/bin/fm-watch-arm.sh"
+  out=$(PLUGIN="$plugin" FM_HOME="$home" FM_ROOT_OVERRIDE="$repo" FM_ARM_LOG="$log" FM_STOP_FILE="$stop" node --input-type=module 2>&1 <<'EOF'
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+
+let tool = null;
+const handlers = new Map();
+const pi = {
+  on(event, handler) {
+    handlers.set(event, handler);
+  },
+  registerCommand() {},
+  registerTool(candidate) {
+    if (candidate.name === "fm_watch_arm_pi") tool = candidate;
+  },
+  sendUserMessage: async () => {},
+};
+writeFileSync(`${process.env.FM_HOME}/state/.lock`, `${process.pid}\n`);
+const mod = await import(pathToFileURL(process.env.PLUGIN).href);
+mod.default(pi);
+await tool.execute("tool-call-classify", {}, undefined, undefined, {});
+for (let i = 0; i < 250; i += 1) {
+  const rows = existsSync(process.env.FM_ARM_LOG)
+    ? readFileSync(process.env.FM_ARM_LOG, "utf8").trim().split("\n")
+    : [];
+  if (rows.length >= 2) break;
+  await new Promise((resolve) => setTimeout(resolve, 10));
+}
+const lifecycleFile = `${process.env.FM_HOME}/state/.pi-watch-lifecycle.jsonl`;
+const entriesBeforeShutdown = readFileSync(lifecycleFile, "utf8")
+  .trim()
+  .split("\n")
+  .map((line) => JSON.parse(line));
+const firstClose = entriesBeforeShutdown.find((entry) => entry.event === "arm-closed" && entry.armId === 1);
+if (!firstClose) throw new Error(`missing first arm-closed entry: ${JSON.stringify(entriesBeforeShutdown)}`);
+if (firstClose.classification !== "actionable") {
+  throw new Error(`actionable close was not classified: ${JSON.stringify(firstClose)}`);
+}
+if (!firstClose.classificationMessage?.includes("synthetic classified wake")) {
+  throw new Error(`actionable close classification message is missing detail: ${JSON.stringify(firstClose)}`);
+}
+await handlers.get("session_shutdown")?.({ type: "session_shutdown" }, {});
+for (let i = 0; i < 250; i += 1) {
+  const entries = readFileSync(lifecycleFile, "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  const secondClose = entries.find((entry) => entry.event === "arm-closed" && entry.armId === 2);
+  if (secondClose) {
+    if (secondClose.extensionStopping !== true) {
+      throw new Error(`shutdown close did not retain stopping attribution: ${JSON.stringify(secondClose)}`);
+    }
+    if ("classification" in secondClose || "classificationMessage" in secondClose) {
+      throw new Error(`shutdown close unexpectedly carried a close classification: ${JSON.stringify(secondClose)}`);
+    }
+    process.exit(0);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 10));
+}
+throw new Error("shutdown close was never logged");
+EOF
+)
+  status=$?
+  expect_code 0 "$status" "Pi lifecycle log must classify non-shutdown closes and retain stopping attribution during shutdown"
+  [ -z "$out" ] || fail "Pi lifecycle classification test printed output: $out"
+  pass "Pi lifecycle log records close classification and preserves shutdown attribution"
+}
+
+test_pi_lifecycle_log_rotates_when_oversized() {
+  local repo home plugin lifecycle_log out status size line_count
+  repo="$TMP_ROOT/pi-lifecycle-rotate-root"
+  home="$TMP_ROOT/pi-lifecycle-rotate-home"
+  mkdir -p "$repo/bin" "$home/state" "$home/config"
+  install_pi_watch_extension_fixture "$repo"
+  plugin="$repo/.pi/extensions/fm-primary-pi-watch.ts"
+  : > "$repo/bin/fm-watch-arm.sh"
+  chmod +x "$repo/bin/fm-watch-arm.sh"
+  lifecycle_log="$home/state/.pi-watch-lifecycle.jsonl"
+  : > "$lifecycle_log"
+  local i
+  for i in $(seq 1 400); do
+    printf '{"event":"old-marker","seq":%d}\n' "$i" >> "$lifecycle_log"
+  done
+  out=$(PLUGIN="$plugin" FM_HOME="$home" FM_ROOT_OVERRIDE="$repo" FM_WATCH_LIFECYCLE_LOG_MAX_BYTES=2000 FM_WATCH_LIFECYCLE_LOG_RETAIN_LINES=5 node --input-type=module 2>&1 <<'EOF'
+import { writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+
+const pi = {
+  on() {},
+  registerCommand() {},
+  registerTool() {},
+  sendUserMessage: async () => {},
+};
+writeFileSync(`${process.env.FM_HOME}/state/.lock`, `${process.pid}\n`);
+const mod = await import(pathToFileURL(process.env.PLUGIN).href);
+mod.default(pi);
+EOF
+)
+  status=$?
+  expect_code 0 "$status" "Pi extension load must not fail while rotating an oversized lifecycle log"
+  [ -z "$out" ] || fail "Pi lifecycle rotation test printed output: $out"
+  size=$(wc -c < "$lifecycle_log" | tr -d '[:space:]')
+  [ "$size" -lt 2000 ] || fail "Pi lifecycle log did not shrink below its configured size bound: ${size} bytes"
+  line_count=$(wc -l < "$lifecycle_log" | tr -d '[:space:]')
+  [ "$line_count" -le 6 ] || fail "Pi lifecycle log kept far more than its configured retained line count: ${line_count} lines"
+  grep -q '"event":"extension-loaded"' "$lifecycle_log" \
+    || fail "Pi lifecycle log rotation dropped the newest entry"
+  grep -q '"old-marker".*"seq":1}' "$lifecycle_log" \
+    && fail "Pi lifecycle log rotation kept the oldest entries instead of trimming them"
+  pass "Pi lifecycle log rotates a bounded tail once it exceeds its configured size"
 }
 
 test_opencode_primary_watch_plugin_static_wiring() {
@@ -2014,6 +2153,8 @@ test_pi_actionable_close_rechecks_session_lock
 test_pi_arm_distinguishes_session_lock_ownership
 test_pi_process_exit_cleanup_listener_lifecycle
 test_pi_process_exit_cleanup_stops_arm_child
+test_pi_lifecycle_log_records_close_classification
+test_pi_lifecycle_log_rotates_when_oversized
 test_opencode_primary_watch_plugin_static_wiring
 test_opencode_plugin_package_boundary_is_explicit_esm
 test_opencode_primary_watch_plugin_uses_effective_state_home
