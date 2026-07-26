@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { chmod, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -131,7 +132,11 @@ try {
     },
   });
   assert.deepEqual(launched.map(({ target, workspaceId }) => [target, workspaceId]), [["alpha", undefined], ["beta", "learning-workspace"]]);
-  assert.equal(herdrCalls.filter((call) => call[1] === "workspace" && call[2] === "create").length, 1);
+  const workspaceCreate = herdrCalls.find((call) => call[1] === "workspace" && call[2] === "create");
+  assert.ok(workspaceCreate);
+  const canonicalTestRoot = await realpath(workspaceCreate[workspaceCreate.indexOf("--cwd") + 1]);
+  const testRootHash = createHash("sha256").update(canonicalTestRoot).digest("hex").slice(0, 12);
+  assert.equal(workspaceCreate[workspaceCreate.indexOf("--label") + 1], `learning-${testRootHash}-${proposal.id.slice(0, 12)}`);
   assert.equal(herdrCalls.filter((call) => call[1] === "tab" && call[2] === "create").length, 2);
   const extractionCommands = herdrCalls.filter((call) => call[1] === "pane" && call[2] === "run");
   assert.equal(extractionCommands.length, 2);

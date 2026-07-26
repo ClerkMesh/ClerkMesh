@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -87,7 +88,11 @@ export function createHerdrLearningLauncher({ session, commandForTarget, execute
     if (workspaceId && authoritativeWorkspace && workspaceId !== authoritativeWorkspace) throw new Error("Herdr Learning workspace authority changed");
 
     if (!authoritativeWorkspace) {
-      const output = await herdr("workspace", "create", "--cwd", candidateDirectory, "--label", `learning-${proposalId.slice(0, 12)}`, "--no-focus");
+      // Include a stable hash of the canonical fixture/candidate root so test
+      // workspaces cannot collide with or masquerade as business workspaces.
+      const canonicalCandidate = await realpath(candidateDirectory);
+      const rootHash = createHash("sha256").update(canonicalCandidate).digest("hex").slice(0, 12);
+      const output = await herdr("workspace", "create", "--cwd", canonicalCandidate, "--label", `learning-${rootHash}-${proposalId.slice(0, 12)}`, "--no-focus");
       authoritativeWorkspace = field(output, (value) => value.result?.workspace?.workspace_id, "Learning workspace id");
       seededTab = field(output, (value) => value.result?.tab?.tab_id, "seeded tab id");
       if (workspaceId && workspaceId !== authoritativeWorkspace) throw new Error("Herdr created an unexpected Learning workspace");
