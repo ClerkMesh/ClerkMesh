@@ -26,6 +26,7 @@ REAL_MV=$(command -v mv)
 REAL_STAT=$(command -v stat)
 REAL_CHMOD=$(command -v chmod)
 REAL_BASENAME=$(command -v basename)
+REAL_NODE=$(command -v node)
 
 file_mode() {
   if [ "$(uname)" = Darwin ]; then
@@ -88,6 +89,14 @@ printf '%s\n' "$*" >> "$FM_TEST_GLAB_LOG"
 printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE:-opened}"
 SH
   chmod +x "$fakebin/gh" "$fakebin/gh-axi" "$fakebin/glab"
+  cat > "$fakebin/node" <<SH
+#!/usr/bin/env bash
+case "\${1:-}" in
+  */fm-task-activity-append.mjs) printf '1\\n'; exit 0 ;;
+esac
+exec "$REAL_NODE" "\$@"
+SH
+  chmod +x "$fakebin/node"
   : > "$dir/gh.log"
   : > "$dir/gh-axi.log"
   : > "$dir/glab.log"
@@ -97,6 +106,7 @@ SH
 
 write_task_meta() {
   local dir=$1 id=${2:-task-a}
+  mkdir -p "$dir/home/data/$id"
   fm_write_meta "$dir/home/state/$id.meta" \
     "window=fm-$id" \
     "worktree=$dir/wt" \
