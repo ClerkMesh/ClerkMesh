@@ -2,12 +2,12 @@
   "schema": "s3-005-real-web-worker-recovery.v1",
   "beforeWebExit": {
     "hash": "22f2155a3584d596439531655b86627d1b7ff8371c48e6f39932ef6c6d774cb2",
-    "observedAt": "2026-07-25T08:15:05.086Z",
+    "observedAt": "2026-07-26T08:01:35.629Z",
     "liveEndpointCount": 2
   },
   "afterWebRestart": {
     "hash": "22f2155a3584d596439531655b86627d1b7ff8371c48e6f39932ef6c6d774cb2",
-    "observedAt": "2026-07-25T08:15:05.176Z",
+    "observedAt": "2026-07-26T08:01:35.725Z",
     "liveEndpointCount": 2
   },
   "webOwnedPrimaryStarted": false,
