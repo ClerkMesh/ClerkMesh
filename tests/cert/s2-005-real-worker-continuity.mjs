@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -19,6 +19,7 @@ const clerks = join(fixture, "clerks");
 const state = join(fixture, "state");
 const capability = join(root, "packages/clerk-cli/bin/clerk-capability.sh");
 const nonce = randomUUID().replaceAll("-", "");
+const rootHash = createHash("sha256").update(fixture).digest("hex").slice(0, 12);
 let workspaceId;
 
 async function run(command, args, options = {}) {
@@ -63,7 +64,7 @@ try {
   const newBrief = join(fixture, "brief-new.md");
   const oldSnapshot = await makeContext("review-clerk", "knowledge/review.md", `OLD_${nonce}`, oldBrief);
   const newSnapshot = await makeContext("delivery-clerk", "workflows/delivery.md", `NEW_${nonce}`, newBrief);
-  const workspace = JSON.parse(await run("herdr", ["workspace", "create", "--cwd", fixture, "--label", `s2-005-${nonce.slice(0, 8)}`, "--no-focus"]));
+  const workspace = JSON.parse(await run("herdr", ["workspace", "create", "--cwd", fixture, "--label", `s2-005-${rootHash}`, "--no-focus"]));
   workspaceId = workspace.result.workspace.workspace_id;
 
   const oldAgent = `s2-005-old-${nonce.slice(0, 8)}`;

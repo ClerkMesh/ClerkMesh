@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -20,6 +20,7 @@ const state = join(fixture, "state");
 const repository = join(clerks, "review-clerk");
 const brief = join(fixture, "brief.md");
 const nonce = `APPROVED_${randomUUID().replaceAll("-", "")}`;
+const rootHash = createHash("sha256").update(fixture).digest("hex").slice(0, 12);
 const agentName = `s2-004-${randomUUID().slice(0, 8)}`;
 let workspaceId;
 
@@ -54,7 +55,7 @@ try {
   });
   await writeFile(brief, `# Worker brief\n\nUse only the bounded Clerk capability.\n\n<!-- clerkmesh:execution-context:v1 -->\nschema: clerkmesh.execution-context.v1\nencoding: canonical-json-base64\nsha256: ${encoded.sha256}\npayload: ${encoded.base64}\n<!-- /clerkmesh:execution-context:v1 -->\n`);
 
-  const workspace = JSON.parse(await run("herdr", ["workspace", "create", "--cwd", fixture, "--label", agentName, "--no-focus"]));
+  const workspace = JSON.parse(await run("herdr", ["workspace", "create", "--cwd", fixture, "--label", `s2-004-${rootHash}`, "--no-focus"]));
   workspaceId = workspace.result.workspace.workspace_id;
   const capability = join(root, "packages/clerk-cli/bin/clerk-capability.sh");
   const prompt = [
