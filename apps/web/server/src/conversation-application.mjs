@@ -12,6 +12,7 @@ import { createConversationWriteCoordinator } from "./conversation-write-coordin
 import { createConversationWriteLease } from "./conversation-write-lease.mjs";
 import { createPiPrimarySupervisor } from "./pi-primary-supervisor.mjs";
 import { createPiSessionDiscovery } from "./pi-session-discovery.mjs";
+import { readPiSessionHistory } from "./pi-session-history.mjs";
 import { createWorkProjectionPollers } from "./work-projection-pollers.mjs";
 
 /**
@@ -54,6 +55,10 @@ export function createConversationApplication({
   const app = createConversationServer({
     firstmateRoot: root,
     listSessions,
+    sessionHistory: async (sessionId) => {
+      const session = (await catalog()).sessionsById.get(sessionId);
+      return session ? readPiSessionHistory(session) : null;
+    },
     writeCoordinator,
     writeLease,
     eventProjection,

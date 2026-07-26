@@ -62,11 +62,12 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, projectCatalog, learningReviews, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, sessionHistory, clerkCatalog, projectCatalog, learningReviews, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
   if (typeof listSessions !== "function") throw new TypeError("listSessions is required");
+  if (sessionHistory !== undefined && typeof sessionHistory !== "function") throw new TypeError("sessionHistory must be a function");
   if (!Number.isSafeInteger(heartbeatIntervalMs) || heartbeatIntervalMs < 1) {
     throw new TypeError("heartbeatIntervalMs must be a positive safe integer");
   }
@@ -130,6 +131,18 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
       return reply.code(503).send({ error: "Pi session catalog is unavailable." });
     }
   });
+
+  if (sessionHistory !== undefined) {
+    app.get("/api/conversations/sessions/:sessionId/history", async (request, reply) => {
+      try {
+        const history = await sessionHistory(request.params.sessionId);
+        if (history === null) return reply.code(404).send({ error: "Pi session was not found." });
+        return history;
+      } catch {
+        return reply.code(503).send({ error: "Pi session history is unavailable." });
+      }
+    });
+  }
 
   if (clerkCatalog !== undefined) {
     app.get("/api/clerks", async (_request, reply) => {
