@@ -162,9 +162,9 @@ EOF
     || fail "idempotent retry duplicated the route hold"
   [ "$(grep -cE "^- \[ \] $access_hold -" "$home/data/backlog.md")" = 1 ] \
     || fail "second decision did not retain one distinct backlog identity"
-  [ "$(grep -c '"'"'"type":"decision-requested".*"summary":"Captain decision route requested"'"'"' "$home/data/$id/activity.jsonl")" -eq 1 ] \
+  [ "$(grep -c '"type":"decision-requested".*"summary":"Captain decision route requested"' "$home/data/$id/activity.jsonl")" -eq 1 ] \
     || fail "idempotent route hold did not record exactly one decision-requested activity event"
-  [ "$(grep -c '"'"'"type":"decision-requested".*"summary":"Captain decision access requested"'"'"' "$home/data/$id/activity.jsonl")" -eq 1 ] \
+  [ "$(grep -c '"type":"decision-requested".*"summary":"Captain decision access requested"' "$home/data/$id/activity.jsonl")" -eq 1 ] \
     || fail "access hold did not record its distinct decision-requested activity event"
 
   run_decisions "$home" complete "$id" route access >/dev/null \
