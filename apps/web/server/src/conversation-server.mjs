@@ -48,7 +48,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, projectCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, projectCatalog, learningReviews, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -69,6 +69,9 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   }
   if (projectCatalog !== undefined && typeof projectCatalog !== "function") {
     throw new TypeError("projectCatalog must be a function");
+  }
+  if (learningReviews !== undefined && typeof learningReviews !== "function") {
+    throw new TypeError("learningReviews must be a function");
   }
   if (taskGraph !== undefined && typeof taskGraph !== "function") {
     throw new TypeError("taskGraph must be a function");
@@ -124,6 +127,16 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
         return projection;
       } catch {
         return reply.code(503).send({ error: "Project catalog is unavailable." });
+      }
+    });
+  }
+
+  if (learningReviews !== undefined) {
+    app.get("/api/reviews/learning", async (_request, reply) => {
+      try {
+        return await learningReviews();
+      } catch {
+        return reply.code(503).send({ error: "Learning reviews are unavailable." });
       }
     });
   }

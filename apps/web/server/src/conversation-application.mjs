@@ -3,6 +3,7 @@ import { clerkmeshRoot, firstmateHome, spawnPrimary } from "../../../../packages
 import { projectClerkCatalog } from "./clerk-catalog.mjs";
 import { queryFirstmateTaskGraph } from "./firstmate-task-graph.mjs";
 import { queryFirstmateProjectCatalog } from "./firstmate-project-catalog.mjs";
+import { projectLearningReviews } from "./learning-review-catalog.mjs";
 import { composeTaskDetail } from "./task-detail.mjs";
 import { ConversationEventProjection } from "./conversation-event-projection.mjs";
 import { createConversationServer } from "./conversation-server.mjs";
@@ -29,6 +30,7 @@ export function createConversationApplication({
   projectCatalog = projectClerkCatalog,
   queryTaskGraph = queryFirstmateTaskGraph,
   queryProjectCatalog = queryFirstmateProjectCatalog,
+  queryLearningReviews = projectLearningReviews,
   workProjectionPollers = createWorkProjectionPollers({ firstmateRoot: root }),
 } = {}) {
   const eventProjection = new ConversationEventProjection();
@@ -58,6 +60,7 @@ export function createConversationApplication({
     workProjectionPollers,
     clerkCatalog: () => projectCatalog({ registryPath, clerksRoot }),
     projectCatalog: () => queryProjectCatalog({ command: resolve(root, "bin/fm-project-catalog.sh") }),
+    learningReviews: () => queryLearningReviews({ proposalRoot: resolve(clerkmeshRoot, "clerkmesh-state/learning-proposals") }),
     taskGraph: () => queryTaskGraph({ command: resolve(root, "bin/fm-task-graph.sh") }),
     taskDetail: async (taskId) => composeTaskDetail({
       taskId,

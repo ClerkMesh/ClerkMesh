@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { projectLearningReviews } from "../apps/web/server/src/learning-review-catalog.mjs";
+import { createConversationServer } from "../apps/web/server/src/conversation-server.mjs";
 
 const root = await mkdtemp(path.join(os.tmpdir(), "clerkmesh-review-catalog-"));
 const id = "a".repeat(64);
@@ -33,6 +34,23 @@ console.log("ok - Learning review catalog exposes complete path-free Captain rev
 const empty = await projectLearningReviews({ proposalRoot: path.join(root, "missing"), observedAt: "2026-01-01T00:02:00.000Z" });
 assert.deepEqual(empty.proposals, []);
 console.log("ok - absent Learning Proposal authority projects as an empty catalog");
+
+const app = createConversationServer({
+  firstmateRoot: "/canonical/firstmate",
+  listSessions: async () => [],
+  learningReviews: () => projectLearningReviews({ proposalRoot: root, observedAt: "2026-01-01T00:02:00.000Z" }),
+});
+let response = await app.inject({ method: "GET", url: "/api/reviews/learning", headers: { host: "127.0.0.1" } });
+assert.equal(response.statusCode, 200);
+assert.equal(response.json().proposals[0].targets[0].source.preview, "Captain evidence");
+await app.close();
+
+const unavailable = createConversationServer({ firstmateRoot: "/canonical/firstmate", listSessions: async () => [], learningReviews: async () => { throw new Error("private failure"); } });
+response = await unavailable.inject({ method: "GET", url: "/api/reviews/learning", headers: { host: "127.0.0.1" } });
+assert.equal(response.statusCode, 503);
+assert.deepEqual(response.json(), { error: "Learning reviews are unavailable." });
+await unavailable.close();
+console.log("ok - Learning review HTTP query is path-free and fails closed");
 
 manifest.targets[0].review.changedPaths = ["unsafe.sh"];
 await writeFile(path.join(root, id, "manifest.json"), JSON.stringify(manifest));
