@@ -286,14 +286,15 @@ export async function restartStaleLearningTargetExtraction({ root, proposalId, t
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }
-    const endpoint = await launchTarget({ proposalId, target: target.name, candidateDirectory: candidate, sourceDirectory: source, workspaceId });
+    const runDirectory = path.join(path.resolve(learningRunsRoot), proposalId);
+    await mkdir(runDirectory, { recursive: true, mode: 0o700 });
+    const completionMarker = path.join(runDirectory, `${target.name}-attempt-${attempt}.complete.json`);
+    const endpoint = await launchTarget({ proposalId, target: target.name, candidateDirectory: candidate, sourceDirectory: source, completionMarker, workspaceId });
     if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && value.length > 0)) {
       throw new Error(`Learning target ${target.name} did not return an authoritative Herdr endpoint`);
     }
     if (workspaceId && endpoint.workspaceId !== workspaceId) throw new Error("Learning re-extraction must remain in the Proposal Herdr workspace");
-    const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint };
-    const runDirectory = path.join(path.resolve(learningRunsRoot), proposalId);
-    await mkdir(runDirectory, { recursive: true, mode: 0o700 });
+    const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint, completionMarker };
     const destination = path.join(runDirectory, `${target.name}.json`);
     const temporary = `${destination}.${randomUUID()}.tmp`;
     await writeFile(temporary, `${canonical(record)}\n`, { flag: "wx", mode: 0o600 });
@@ -387,6 +388,7 @@ export async function startLearningExtraction({ root, proposalId, sourceDirector
         target: target.name,
         candidateDirectory: path.join(proposalDirectory, target.candidate),
         sourceDirectory: source,
+        completionMarker: path.join(runDirectory, `${target.name}-attempt-1.complete.json`),
         workspaceId,
       });
       if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && value.length > 0)) {
@@ -395,7 +397,7 @@ export async function startLearningExtraction({ root, proposalId, sourceDirector
       if (workspaceId && endpoint.workspaceId !== workspaceId) throw new Error("Learning targets must share one dedicated Herdr workspace");
       if (endpoints.some((item) => item.tabId === endpoint.tabId || item.paneId === endpoint.paneId)) throw new Error("Learning targets must use independent Herdr tabs and panes");
       workspaceId = endpoint.workspaceId;
-      const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint };
+      const record = { schema: "clerkmesh.learning-run-endpoint.v1", proposalId, target: target.name, startedAt, ...endpoint, completionMarker: path.join(runDirectory, `${target.name}-attempt-1.complete.json`) };
       const destination = path.join(runDirectory, `${target.name}.json`);
       const temporary = `${destination}.${randomUUID()}.tmp`;
       await writeFile(temporary, `${canonical(record)}\n`, { flag: "wx", mode: 0o600 });

@@ -1,10 +1,16 @@
 import { execFile } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 const TARGET = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SHA256 = /^[0-9a-f]{64}$/;
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", `'\\''`)}'`;
+}
 
 function field(body, selector, description) {
   let value;
@@ -39,8 +45,17 @@ export function createHerdrLearningInspector({ execute = execFileAsync } = {}) {
   };
 
   return async (endpoint) => {
-    if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && SAFE_ID.test(value))) {
+    if (endpoint?.backend !== "herdr" || ![endpoint.session, endpoint.workspaceId, endpoint.tabId, endpoint.paneId].every((value) => typeof value === "string" && SAFE_ID.test(value)) || !path.isAbsolute(endpoint.completionMarker ?? "")) {
       throw new Error("invalid Herdr Learning endpoint");
+    }
+    try {
+      const marker = JSON.parse(await readFile(endpoint.completionMarker, "utf8"));
+      if (marker.schema !== "clerkmesh.learning-run-completion.v1" || marker.proposalId !== endpoint.proposalId || marker.target !== endpoint.target || marker.status !== "complete") {
+        return "failed";
+      }
+      return "complete";
+    } catch (error) {
+      if (error?.code !== "ENOENT") return "failed";
     }
     const pane = await query(endpoint, "pane");
     if (pane.absent) return "interrupted";
@@ -65,8 +80,8 @@ export function createHerdrLearningLauncher({ session, commandForTarget, execute
     return typeof result === "string" ? result : result.stdout;
   };
 
-  return async ({ proposalId, target, candidateDirectory, sourceDirectory, workspaceId }) => {
-    if (!/^[0-9a-f]{64}$/.test(proposalId ?? "") || !TARGET.test(target ?? "") || !path.isAbsolute(candidateDirectory) || !path.isAbsolute(sourceDirectory)) {
+  return async ({ proposalId, target, candidateDirectory, sourceDirectory, completionMarker, workspaceId }) => {
+    if (!SHA256.test(proposalId ?? "") || !TARGET.test(target ?? "") || !path.isAbsolute(candidateDirectory) || !path.isAbsolute(sourceDirectory) || !path.isAbsolute(completionMarker ?? "")) {
       throw new Error("invalid Herdr Learning target request");
     }
     if (workspaceId && authoritativeWorkspace && workspaceId !== authoritativeWorkspace) throw new Error("Herdr Learning workspace authority changed");
@@ -85,11 +100,15 @@ export function createHerdrLearningLauncher({ session, commandForTarget, execute
     const paneId = field(output, (value) => value.result?.root_pane?.pane_id, "Learning pane id");
     const command = await commandForTarget({ proposalId, target, candidateDirectory, sourceDirectory });
     if (typeof command !== "string" || command.length === 0 || command.includes("\0")) throw new Error("Learning extraction command is invalid");
-    await herdr("pane", "run", paneId, command);
+    const marker = JSON.stringify({ schema: "clerkmesh.learning-run-completion.v1", proposalId, target, status: "complete" });
+    const script = `#!/bin/sh\n${command}\nstatus=$?\nif [ "$status" -eq 0 ]; then\n  tmp=${shellQuote(`${completionMarker}.tmp`)}.$$\n  printf '%s\\n' ${shellQuote(marker)} > "$tmp" && mv "$tmp" ${shellQuote(completionMarker)}\nfi\nexit "$status"\n`;
+    const scriptPath = `${completionMarker}.run.sh`;
+    await writeFile(scriptPath, script, { flag: "wx", mode: 0o700 });
+    await herdr("pane", "run", paneId, `/bin/sh ${shellQuote(scriptPath)}`);
     if (seededTab) {
       await herdr("tab", "close", seededTab);
       seededTab = undefined;
     }
-    return { backend: "herdr", session, workspaceId: authoritativeWorkspace, tabId, paneId };
+    return { backend: "herdr", session, workspaceId: authoritativeWorkspace, tabId, paneId, completionMarker };
   };
 }

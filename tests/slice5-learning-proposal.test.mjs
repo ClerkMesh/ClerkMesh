@@ -96,9 +96,21 @@ try {
       return { stdout: JSON.stringify({ result: { agent: { agent_status: status } } }) };
     },
   });
-  const endpoint = (paneId) => ({ backend: "herdr", session: "isolated-learning", workspaceId: "learning-workspace", tabId: "tab-alpha", paneId });
+  const endpoint = (paneId) => ({
+    backend: "herdr",
+    session: "isolated-learning",
+    workspaceId: "learning-workspace",
+    tabId: "tab-alpha",
+    paneId,
+    proposalId: proposal.id,
+    target: "alpha",
+    completionMarker: path.join(stateDirectory, `${paneId}.complete.json`),
+  });
   assert.equal(await inspectTarget(endpoint("running")), "live");
   assert.equal(await inspectTarget(endpoint("finished")), "complete");
+  const markerEndpoint = endpoint("marker-finished");
+  await writeFile(markerEndpoint.completionMarker, JSON.stringify({ schema: "clerkmesh.learning-run-completion.v1", proposalId: proposal.id, target: "alpha", status: "complete" }));
+  assert.equal(await inspectTarget(markerEndpoint), "complete");
   assert.equal(await inspectTarget(endpoint("missing")), "interrupted");
   assert.equal(await inspectTarget(endpoint("missing-agent")), "interrupted");
   assert.equal(await inspectTarget(endpoint("unknown")), "failed");
@@ -123,7 +135,9 @@ try {
   assert.equal(herdrCalls.filter((call) => call[1] === "tab" && call[2] === "create").length, 2);
   const extractionCommands = herdrCalls.filter((call) => call[1] === "pane" && call[2] === "run");
   assert.equal(extractionCommands.length, 2);
-  assert.ok(extractionCommands.every((call) => call[4].startsWith("pi -p '") && call[4].includes("not a Firstmate Task") && call[4].includes("only non-executable UTF-8 Markdown")));
+  assert.ok(extractionCommands.every((call) => call[4].startsWith("/bin/sh '") && call[4].endsWith(".complete.json.run.sh'")));
+  const extractionScripts = await Promise.all(extraction.endpoints.map(({ completionMarker }) => readFile(`${completionMarker}.run.sh`, "utf8")));
+  assert.ok(extractionScripts.every((script) => script.includes("pi -p") && script.includes("not a Firstmate Task") && script.includes("only non-executable UTF-8 Markdown") && script.includes("clerkmesh.learning-run-completion.v1")));
   assert.equal(herdrCalls.filter((call) => call[1] === "tab" && call[2] === "close" && call[3] === "seed-tab").length, 1);
   assert.ok(herdrCalls.every((call) => call.slice(-2).join(" ") === "--session isolated-learning"));
   assert.equal(extraction.manifest.state, "extracting");
