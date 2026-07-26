@@ -13,6 +13,8 @@ const schemaUrl = new URL("../../../../packages/shared/schemas/conversation-sess
 const catalogSchema = JSON.parse(await readFile(schemaUrl, "utf8"));
 const clerkCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/clerk-catalog.v1.schema.json", import.meta.url);
 const clerkCatalogSchema = JSON.parse(await readFile(clerkCatalogSchemaUrl, "utf8"));
+const projectCatalogSchemaUrl = new URL("../../../../packages/shared/schemas/fm-project-catalog.v1.schema.json", import.meta.url);
+const projectCatalogSchema = JSON.parse(await readFile(projectCatalogSchemaUrl, "utf8"));
 const taskGraphSchemaUrl = new URL("../../../../packages/shared/schemas/fm-task-graph.v1.schema.json", import.meta.url);
 const taskGraphSchema = JSON.parse(await readFile(taskGraphSchemaUrl, "utf8"));
 const taskDetailSchemaUrl = new URL("../../../../packages/shared/schemas/clerkmesh-task-detail.v1.schema.json", import.meta.url);
@@ -46,7 +48,7 @@ function isAllowedOrigin(value) {
  * Construct the Slice 1 HTTP query surface. Dependencies are explicit so reading
  * histories cannot acquire the Primary launch dependency by accident.
  */
-export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
+export function createConversationServer({ firstmateRoot, listSessions, clerkCatalog, projectCatalog, taskGraph, taskDetail, writeCoordinator, writeLease, eventProjection, workProjectionPollers, now, heartbeatIntervalMs = 15_000, logger = false, clientDist }) {
   if (typeof firstmateRoot !== "string" || firstmateRoot.length === 0) {
     throw new TypeError("firstmateRoot is required");
   }
@@ -59,10 +61,14 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
   addFormats(ajv);
   const validateCatalog = ajv.compile(catalogSchema);
   const validateClerkCatalog = ajv.compile(clerkCatalogSchema);
+  const validateProjectCatalog = ajv.compile(projectCatalogSchema);
   const validateTaskGraph = ajv.compile(taskGraphSchema);
   const validateTaskDetail = ajv.compile(taskDetailSchema);
   if (clerkCatalog !== undefined && typeof clerkCatalog !== "function") {
     throw new TypeError("clerkCatalog must be a function");
+  }
+  if (projectCatalog !== undefined && typeof projectCatalog !== "function") {
+    throw new TypeError("projectCatalog must be a function");
   }
   if (taskGraph !== undefined && typeof taskGraph !== "function") {
     throw new TypeError("taskGraph must be a function");
@@ -106,6 +112,18 @@ export function createConversationServer({ firstmateRoot, listSessions, clerkCat
         return projection;
       } catch {
         return reply.code(503).send({ error: "Clerk catalog is unavailable." });
+      }
+    });
+  }
+
+  if (projectCatalog !== undefined) {
+    app.get("/api/projects", async (_request, reply) => {
+      try {
+        const projection = await projectCatalog();
+        if (!validateProjectCatalog(projection)) throw new Error("invalid Project catalog projection");
+        return projection;
+      } catch {
+        return reply.code(503).send({ error: "Project catalog is unavailable." });
       }
     });
   }
