@@ -22,8 +22,17 @@ test("snapshot is schema-valid, cursor-based, and diagnostics are opt-in", () =>
     { sequence: 3, kind: "extension-ui" },
   ]);
   assert.equal(ordinary.events[0].payload.text, "hello");
+  assert.equal(ordinary.freshness, "current");
+  assert.deepEqual(ordinary.provenance, {
+    authority: "pi-session-jsonl",
+    projection: "process-local-pi-rpc-events",
+  });
+  assert.deepEqual(ordinary.omitted, [{ reason: "diagnostic events excluded by request policy" }]);
+  assert.deepEqual(ordinary.errors, []);
   assert.deepEqual(projection.snapshot({ after: ordinary.cursor }).events, []);
-  assert.deepEqual(projection.snapshot({ diagnostics: true }).events.map((event) => event.sequence), [1, 2, 3]);
+  const diagnosticSnapshot = projection.snapshot({ diagnostics: true });
+  assert.deepEqual(diagnosticSnapshot.events.map((event) => event.sequence), [1, 2, 3]);
+  assert.deepEqual(diagnosticSnapshot.omitted, []);
 });
 
 test("ring retains at most 10,000 normalized events with monotonic sequence", () => {
@@ -34,6 +43,7 @@ test("ring retains at most 10,000 normalized events with monotonic sequence", ()
   assert.equal(snapshot.events.length, 10_000);
   assert.equal(snapshot.events[0].sequence, 6);
   assert.equal(snapshot.events.at(-1).sequence, 10_005);
+  assert.deepEqual(snapshot.omitted, [{ reason: "events before the retained process-local window" }]);
 });
 
 test("invalid kinds, payloads, cursors, and limits fail closed", () => {

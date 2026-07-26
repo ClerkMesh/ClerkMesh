@@ -4,15 +4,38 @@
   "title": "ClerkMesh conversation event snapshot v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "observedAt", "cursor", "events"],
+  "required": ["schema", "observedAt", "freshness", "provenance", "cursor", "events", "omitted", "errors"],
   "properties": {
     "schema": { "const": "clerkmesh.conversation-events.v1" },
     "observedAt": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["current", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "projection"],
+      "properties": {
+        "authority": { "const": "pi-session-jsonl" },
+        "projection": { "const": "process-local-pi-rpc-events" }
+      }
+    },
     "cursor": { "type": "integer", "minimum": 0 },
     "events": {
       "type": "array",
       "maxItems": 10000,
       "items": { "$ref": "#/$defs/event" }
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": { "reason": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
     }
   },
   "$defs": {

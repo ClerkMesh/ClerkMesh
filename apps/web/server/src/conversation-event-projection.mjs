@@ -45,12 +45,26 @@ export class ConversationEventProjection {
   snapshot({ after = 0, diagnostics = false } = {}) {
     if (!Number.isSafeInteger(after) || after < 0) throw new TypeError("after must be a non-negative integer");
     const cursor = this.#cursor;
+    const eligible = this.#events.filter((event) => event.sequence > after);
+    const omitted = [];
+    if (this.#events.length > 0 && after < this.#events[0].sequence - 1) {
+      omitted.push({ reason: "events before the retained process-local window" });
+    }
+    if (!diagnostics && eligible.some((event) => event.kind === "diagnostic")) {
+      omitted.push({ reason: "diagnostic events excluded by request policy" });
+    }
     return {
       schema: "clerkmesh.conversation-events.v1",
       observedAt: this.#now().toISOString(),
+      freshness: "current",
+      provenance: {
+        authority: "pi-session-jsonl",
+        projection: "process-local-pi-rpc-events",
+      },
       cursor,
-      events: structuredClone(this.#events.filter((event) =>
-        event.sequence > after && (diagnostics || event.kind !== "diagnostic"))),
+      events: structuredClone(eligible.filter((event) => diagnostics || event.kind !== "diagnostic")),
+      omitted,
+      errors: [],
     };
   }
 }

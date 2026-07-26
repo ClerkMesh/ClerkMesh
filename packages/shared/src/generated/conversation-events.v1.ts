@@ -11,6 +11,10 @@ export interface ConversationEventV1 {
 export interface ConversationEventsV1 {
   schema: "clerkmesh.conversation-events.v1";
   observedAt: string;
+  freshness: "current" | "unknown";
+  provenance: { authority: "pi-session-jsonl"; projection: "process-local-pi-rpc-events" };
   cursor: number;
   events: ConversationEventV1[];
+  omitted: Array<{ reason: string }>;
+  errors: string[];
 }
