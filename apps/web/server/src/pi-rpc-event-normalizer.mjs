@@ -2,8 +2,18 @@ const SENSITIVE_KEY = /(?:authorization|api[-_]?key|access[-_]?token|refresh[-_]
 const ENVIRONMENT_KEY = /^(?:env|environment|environmentVariables)$/i;
 const BEARER = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
 
+function redactString(value) {
+  let redacted = value.replace(BEARER, "Bearer [REDACTED]");
+  for (const [key, secret] of Object.entries(process.env)) {
+    if ((key === "HOME" || SENSITIVE_KEY.test(key)) && typeof secret === "string" && secret.length >= 4) {
+      redacted = redacted.split(secret).join("[REDACTED]");
+    }
+  }
+  return redacted;
+}
+
 function redact(value, seen = new WeakSet()) {
-  if (typeof value === "string") return value.replace(BEARER, "Bearer [REDACTED]");
+  if (typeof value === "string") return redactString(value);
   if (value === null || typeof value !== "object") return value;
   if (seen.has(value)) return "[REDACTED:CIRCULAR]";
   seen.add(value);

@@ -18,6 +18,13 @@ const tool = normalizePiRpcEvent({ type: "tool_execution_start", toolName: "bash
 assert.equal(tool.kind, "diagnostic");
 assert.equal(tool.payload.args.authorization, "[REDACTED]");
 assert.equal(tool.payload.environment, "[REDACTED]", "diagnostics must not retain environment variable names or values");
+const priorDiagnosticSecret = process.env.CLERKMESH_TEST_DIAGNOSTIC_SECRET;
+process.env.CLERKMESH_TEST_DIAGNOSTIC_SECRET = "private-value-123";
+const environmentValue = normalizePiRpcEvent({ type: "tool_execution_update", output: `cwd=${process.env.HOME}; token=private-value-123` });
+assert.equal(JSON.stringify(environmentValue).includes(process.env.HOME), false, "diagnostics must redact HOME values embedded in strings");
+assert.equal(JSON.stringify(environmentValue).includes("private-value-123"), false, "diagnostics must redact sensitive environment values embedded in strings");
+if (priorDiagnosticSecret === undefined) delete process.env.CLERKMESH_TEST_DIAGNOSTIC_SECRET;
+else process.env.CLERKMESH_TEST_DIAGNOSTIC_SECRET = priorDiagnosticSecret;
 assert.deepEqual(normalizePiRpcEvent({ type: "unknown_future_event", token: "oops" }), {
   kind: "diagnostic", payload: { rpcType: "unknown_future_event" },
 });
