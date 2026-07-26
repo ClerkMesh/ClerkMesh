@@ -54,6 +54,7 @@ A requirement is marked complete only when the linked commands and artifacts are
 | CERT-002 | complete | Contract tests verify complete once-per-run protocol injection; the opt-in real runner verifies canonical extension loading, command discovery, extension UI, Pi RPC stream, and settled model execution | `evidence/slice-1/s1-003-pi-stream-extension-ui.md` |
 | CERT-003 | complete | Isolated genuine Herdr/Treehouse runs cover Worker spawn, status projection, durable Captain-relevant wake and drain, genuine Pi follow-up, completion, and Web-exit recovery | `evidence/certifications/cert-003-worker-runtime.md` |
 | CERT-004 | complete | The isolated genuine Pi/Herdr/Treehouse run uses real Git for local-only worktree execution, validation, authoritative review, guarded fast-forward landing, landed proof, and teardown | `evidence/slice-3/s3-001-local-delivery.md` |
+| CERT-005 | complete | Genuine Pi/Herdr runs prove two-target extraction continues after normal and SIGKILL Primary-owner exits, then a separate production invocation reconciles solely from durable Proposal authority without relaunching Agents or inventing decisions | `evidence/certifications/cert-005-learning-continuity.md`; `evidence/slice-5/s5-002-real-learning-extraction.md`; `evidence/slice-5/s5-005-restart-reconciliation.md` |
 | CERT-006 | complete | Guarded genuine runs against the Captain-authorized private fixture exercised production direct-PR and no-mistakes preflights, branch-specific PR creation, immutable head/ancestry verification, complete-diff review, and squash merge | `evidence/slice-3/s3-007-remote-certification-blocker.md`; `evidence/slice-3/artifacts/s3-007-real-direct-pr.txt`; `evidence/slice-3/artifacts/s3-007-real-no-mistakes.txt` |
 | CLERK-001 | partial | `test:slice2-clerk-repository` freezes and verifies the strict repository contract: independent Git metadata, exact frontmatter, ordered six-section `CLERK.md`, size limits, approved root layout, indexed material metadata, Skill structure, and symlink/nested-repository refusal | Lifecycle integration remains |
 | CLERK-002 | partial | `test:slice2-clerk-repository` validates an isolated real-Git approved commit snapshot, proves dirty working-tree content cannot participate, and fails closed when the requested historical commit is absent | Lifecycle selection/compile binding and full history-object certification remain |
@@ -165,5 +166,5 @@ Dependencies: Firstmate remains the only Task, brief, report, dependency, and de
 - Slice 3: **complete** (S3-001 through S3-007)
 - Slice 4: **awaiting-final-captain-uat** (S4-001 through S4-005 engineering exits complete; Slice 5 is not blocked)
 - Slice 5: **awaiting-final-captain-uat** (S5-001 through S5-007 engineering exits complete)
-- Certifications: **in progress** (CERT-001 through CERT-004 and CERT-006 complete; CERT-005 is next)
-- Release Gate: **not started**
+- Certifications: **complete** (CERT-001 through CERT-006 have reproducible tracked genuine-runtime evidence)
+- Release Gate: **not started** (clean-root Release Gate execution is next)
