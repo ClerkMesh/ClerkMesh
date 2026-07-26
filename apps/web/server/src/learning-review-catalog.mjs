@@ -44,13 +44,20 @@ export async function projectLearningReviews({ proposalRoot, observedAt = new Da
   const names = entries.filter((entry) => entry.isDirectory() && ID.test(entry.name)).map((entry) => entry.name).sort();
   if (names.length > MAX_PROPOSALS) throw new Error("Learning Proposal catalog exceeds limit");
   const proposals = [];
+  const omitted = [];
   for (const id of names) {
     const bytes = await readFile(path.join(proposalRoot, id, "manifest.json"));
     if (bytes.length > MAX_MANIFEST_BYTES) throw new Error("Learning Proposal manifest exceeds limit");
     const manifest = JSON.parse(bytes.toString("utf8"));
     if (manifest.schema !== "clerkmesh.learning-proposal.v1" || manifest.id !== id || !Array.isArray(manifest.targets)) throw new Error("invalid Learning Proposal manifest");
-    const targets = manifest.targets.map(reviewTarget).filter(Boolean);
+    const targets = [];
+    for (const target of manifest.targets) {
+      const projected = reviewTarget(target);
+      if (projected) targets.push(projected);
+      else omitted.push(Object.freeze({ proposalId: id, reason: `Target ${target.name} has no materialized review` }));
+    }
     if (targets.length > 0) proposals.push(Object.freeze({ schema: "learning-proposal.v1", id, state: manifest.state, createdAt: manifest.createdAt, resolvedAt: manifest.resolvedAt ?? null, targets }));
+    else omitted.push(Object.freeze({ proposalId: id, reason: "Proposal has no materialized reviews" }));
   }
   return Object.freeze({
     schema: "learning-list.v1",
@@ -58,7 +65,7 @@ export async function projectLearningReviews({ proposalRoot, observedAt = new Da
     freshness: "current",
     provenance: { authority: "clerkmesh-learning-proposals" },
     proposals,
-    omitted: [],
+    omitted,
     errors: [],
   });
 }

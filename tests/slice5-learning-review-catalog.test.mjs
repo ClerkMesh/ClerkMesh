@@ -27,6 +27,7 @@ assert.deepEqual(catalog.provenance, { authority: "clerkmesh-learning-proposals"
 assert.equal(catalog.proposals.length, 1);
 assert.equal(catalog.proposals[0].schema, "learning-proposal.v1");
 assert.equal(catalog.proposals[0].targets.length, 1, "only materialized reviews are exposed");
+assert.deepEqual(catalog.omitted, [{ proposalId: id, reason: "Target pending-clerk has no materialized review" }], "unavailable target reviews are explicit rather than silently absent");
 assert.deepEqual(catalog.proposals[0].targets[0].changedPaths, ["LEARNING.md"]);
 assert.equal(catalog.proposals[0].targets[0].source.preview, "Captain evidence");
 assert.equal(catalog.proposals[0].targets[0].fullDiff, "diff --git a/LEARNING.md b/LEARNING.md");
