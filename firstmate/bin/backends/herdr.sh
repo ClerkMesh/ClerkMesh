@@ -124,15 +124,29 @@ FM_BACKEND_HERDR_PRESENTATION_JOURNAL_SUFFIX=".herdr-presentation"
 # when the PRIMARY spawns that secondmate (its own process's FM_HOME still
 # names the primary at that point) - see fm-spawn.sh's herdr case arm.
 fm_backend_herdr_workspace_label() {
-  local marker="$FM_HOME/$FM_BACKEND_HERDR_SECONDMATE_MARKER" id
+  local marker="$FM_HOME/$FM_BACKEND_HERDR_SECONDMATE_MARKER" id label root home hash
+  label=firstmate
   if [ -f "$marker" ]; then
     id=$(tr -d '[:space:]' < "$marker" 2>/dev/null)
     if [ -n "$id" ]; then
-      printf '2ndmate-%s' "$id"
-      return 0
+      label="2ndmate-$id"
     fi
   fi
-  printf 'firstmate'
+
+  # Genuine-runtime fixtures may opt into a visibly fixture-bound label. The
+  # supplied root is accepted only when it and FM_HOME resolve canonically and
+  # the home is strictly contained by that root; malformed bindings fail closed
+  # rather than falling back to the production compatibility label.
+  if [ -n "${FM_HERDR_TEST_ROOT:-}" ]; then
+    [ "${FM_HERDR_TEST_ROOT#/}" != "$FM_HERDR_TEST_ROOT" ] || { echo "error: FM_HERDR_TEST_ROOT must be absolute" >&2; return 1; }
+    root=$(cd "$FM_HERDR_TEST_ROOT" 2>/dev/null && pwd -P) || { echo "error: FM_HERDR_TEST_ROOT is not a canonical directory" >&2; return 1; }
+    home=$(cd "$FM_HOME" 2>/dev/null && pwd -P) || { echo "error: FM_HOME is not a canonical directory" >&2; return 1; }
+    case "$home" in "$root"/*) ;; *) echo "error: FM_HOME must be contained by FM_HERDR_TEST_ROOT" >&2; return 1 ;; esac
+    hash=$(printf '%s' "$root" | shasum -a 256 2>/dev/null | awk '{print substr($1,1,12)}')
+    [ "${#hash}" -eq 12 ] || { echo "error: cannot hash FM_HERDR_TEST_ROOT" >&2; return 1; }
+    label="$label-test-$hash"
+  fi
+  printf '%s' "$label"
 }
 
 # fm_backend_herdr_cli: run `herdr <args...>` scoped to <session>, setting

@@ -19,6 +19,7 @@ PROJECT="$HOME_ROOT/projects/local-delivery"
 TASK=s3local
 SESSION="fm-lab-clerkmesh-s3-001-$$"
 export HERDR_SESSION="$SESSION"
+export FM_HERDR_TEST_ROOT="$TMP"
 WT=
 cleanup() {
   trap - EXIT INT TERM

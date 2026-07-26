@@ -63,6 +63,7 @@ command -v treehouse >/dev/null 2>&1 || { echo "skip: treehouse not found (requi
 TMP_ROOT=$(mktemp -d "$(cd "${TMPDIR:-/tmp}" && pwd -P)/fm-herdr-e2e.XXXXXX")
 SESSION="fm-lab-herdr-e2e-$$"
 export HERDR_SESSION="$SESSION"
+export FM_HERDR_TEST_ROOT="$TMP_ROOT"
 WT1=; WT2=; WEB_POLL_PID=
 cleanup_all() {
   trap - EXIT

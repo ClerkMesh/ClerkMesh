@@ -227,6 +227,19 @@ test_workspace_label_primary_home_no_marker() {
   pass "fm_backend_herdr_workspace_label: a primary home (no marker) resolves to 'firstmate'"
 }
 
+test_workspace_label_fixture_root_hash_and_containment() {
+  local fixture home expected out status
+  fixture="$TMP_ROOT/hash-fixture"; home="$fixture/primary"; mkdir -p "$home"
+  expected=$(printf '%s' "$(cd "$fixture" && pwd -P)" | shasum -a 256 | awk '{print substr($1,1,12)}')
+  out=$( FM_HOME="$home" FM_HERDR_TEST_ROOT="$fixture" bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_workspace_label' "$ROOT" )
+  [ "$out" = "firstmate-test-$expected" ] || fail "fixture label did not bind the canonical root hash, got '$out'"
+  status=0
+  out=$( FM_HOME="$home" FM_HERDR_TEST_ROOT="$TMP_ROOT/outside" bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_workspace_label' "$ROOT" 2>&1 ) || status=$?
+  [ "$status" -ne 0 ] || fail "a missing/outside fixture root should fail closed"
+  assert_contains "$out" "FM_HERDR_TEST_ROOT" "fixture-root refusal was not explicit"
+  pass "fm_backend_herdr_workspace_label: test binding uses canonical-root hash and fails closed"
+}
+
 test_workspace_label_secondmate_home_uses_marker_id() {
   local home
   home="$TMP_ROOT/secondmate-home"; mkdir -p "$home"
@@ -2977,6 +2990,7 @@ test_version_check_accepts_current_protocol
 test_version_check_refuses_old_protocol
 test_version_check_refuses_missing_herdr
 test_workspace_label_primary_home_no_marker
+test_workspace_label_fixture_root_hash_and_containment
 test_workspace_label_secondmate_home_uses_marker_id
 test_workspace_label_secondmate_marker_trims_whitespace
 test_workspace_label_empty_marker_falls_back_to_primary

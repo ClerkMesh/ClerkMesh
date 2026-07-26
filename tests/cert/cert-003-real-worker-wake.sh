@@ -12,6 +12,7 @@ for command in git herdr treehouse pi; do command -v "$command" >/dev/null 2>&1 
 TMP=$(mktemp -d "$(cd "${TMPDIR:-/tmp}" && pwd -P)/clerkmesh-cert-003.XXXXXX")
 HOME_ROOT="$TMP/firstmate"; PROJECT="$HOME_ROOT/projects/wake"; TASK=cert003wake
 SESSION="fm-lab-clerkmesh-cert-003-$$"; export HERDR_SESSION="$SESSION"
+export FM_HERDR_TEST_ROOT="$TMP"
 ARM_PID=; WT=
 cleanup() {
   trap - EXIT INT TERM
