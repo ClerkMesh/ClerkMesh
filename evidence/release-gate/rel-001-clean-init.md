@@ -19,7 +19,7 @@ git diff --check
 Expected terminal results:
 
 ```text
-ok - init state/conflict matrix (18 isolated cases)
+ok - init dependency/provenance/state matrix (22 isolated cases)
 ok - TUI and Web traverse one canonical Primary argv/environment owner
 ```
 
@@ -27,7 +27,9 @@ ok - TUI and Web traverse one canonical Primary argv/environment owner
 
 The init matrix exercises the public `clerkmesh init` boundary in isolated roots and proves:
 
-- clean initialization succeeds;
+- required Node and Git dependencies are explicitly checked before writes;
+- complete provenance metadata and the vendored license digest are validated before writes;
+- clean initialization succeeds with the full supported directory layout and writeability checks;
 - repeated initialization is byte-identical;
 - unknown/unmarked content in every supported operational root is refused without mutation;
 - unsupported or malformed versions, conflicting authoritative bytes, and symlinked roots fail closed;

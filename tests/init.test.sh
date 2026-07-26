@@ -64,6 +64,44 @@ assert_initialized() {
   grep -Fq '| escalation |' "$fixture/clerkmesh-data/clerks.md" || fail "registry omits Escalation Clerk"
 }
 
+# Init validates its complete dependency and provenance boundary before writing state.
+NO_NODE="$TMP/no-node"
+make_fixture "$NO_NODE"
+mkdir -p "$TMP/path-no-node"
+ln -s "$(command -v dirname)" "$TMP/path-no-node/dirname"
+ln -s "$(command -v pwd)" "$TMP/path-no-node/pwd"
+snapshot_tree "$NO_NODE" > "$TMP/no-node.before"
+if PATH="$TMP/path-no-node" /bin/bash "$NO_NODE/bin/clerkmesh" init > "$TMP/init.out" 2> "$TMP/init.err"; then
+  fail 'init unexpectedly succeeded without node'
+fi
+grep -Fq 'required dependency not found: node' "$TMP/init.err" || fail 'missing node refusal was not explicit'
+snapshot_tree "$NO_NODE" > "$TMP/no-node.after"
+cmp -s "$TMP/no-node.before" "$TMP/no-node.after" || fail 'missing node refusal changed product paths'
+
+NO_GIT="$TMP/no-git"
+make_fixture "$NO_GIT"
+mkdir -p "$TMP/path-no-git"
+ln -s "$(command -v dirname)" "$TMP/path-no-git/dirname"
+ln -s "$(command -v pwd)" "$TMP/path-no-git/pwd"
+ln -s "$(command -v node)" "$TMP/path-no-git/node"
+snapshot_tree "$NO_GIT" > "$TMP/no-git.before"
+if PATH="$TMP/path-no-git" /bin/bash "$NO_GIT/bin/clerkmesh" init > "$TMP/init.out" 2> "$TMP/init.err"; then
+  fail 'init unexpectedly succeeded without git'
+fi
+grep -Fq 'required dependency not found: git' "$TMP/init.err" || fail 'missing git refusal was not explicit'
+snapshot_tree "$NO_GIT" > "$TMP/no-git.after"
+cmp -s "$TMP/no-git.before" "$TMP/no-git.after" || fail 'missing git refusal changed product paths'
+
+BAD_PROVENANCE="$TMP/bad-provenance"
+make_fixture "$BAD_PROVENANCE"
+node -e "const fs=require('fs');const f=process.argv[1];const p=JSON.parse(fs.readFileSync(f));p.sourceTree='invalid';fs.writeFileSync(f,JSON.stringify(p))" "$BAD_PROVENANCE/firstmate.provenance.json"
+assert_refused_unchanged "$BAD_PROVENANCE" 'Firstmate provenance is invalid' 'malformed complete provenance'
+
+BAD_LICENSE="$TMP/bad-license"
+make_fixture "$BAD_LICENSE"
+printf '\nmodified license\n' >> "$BAD_LICENSE/firstmate/LICENSE"
+assert_refused_unchanged "$BAD_LICENSE" 'Firstmate provenance is invalid' 'license digest mismatch'
+
 # Clean init accepts pre-created empty state roots. A second init is byte-for-byte idempotent.
 CLEAN="$TMP/clean"
 make_fixture "$CLEAN"
@@ -175,4 +213,4 @@ rm -rf "$MISSING_ESCALATION/clerks/escalation"
 assert_initialized "$MISSING_ESCALATION"
 cmp -s "$TMP/missing-escalation.registry" "$MISSING_ESCALATION/clerkmesh-data/clerks.md" || fail 'Escalation repair rewrote the existing registry'
 
-printf 'ok - init state/conflict matrix (18 isolated cases)\n'
+printf 'ok - init dependency/provenance/state matrix (22 isolated cases)\n'

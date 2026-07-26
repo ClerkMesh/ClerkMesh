@@ -22,12 +22,25 @@ verify_provenance() {
   command -v node >/dev/null 2>&1 || fatal "required dependency not found: node"
   command -v git >/dev/null 2>&1 || fatal "required dependency not found: git"
   node - "$CLERKMESH_ROOT/firstmate.provenance.json" <<'NODE' || fatal "Firstmate provenance is invalid"
+const crypto = require('crypto');
 const fs = require('fs');
-const p = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-for (const key of ['repository', 'defaultBranch', 'sourceCommit', 'vendoredAt', 'license', 'licenseFile', 'attribution']) {
+const path = require('path');
+const provenancePath = process.argv[2];
+const p = JSON.parse(fs.readFileSync(provenancePath, 'utf8'));
+for (const key of ['repository', 'defaultBranch', 'sourceCommit', 'sourceTree', 'vendoredAt', 'vendoredPath', 'license', 'licenseFile', 'licenseSha256', 'attribution']) {
   if (typeof p[key] !== 'string' || !p[key]) process.exit(1);
 }
-if (!/^[0-9a-f]{40}$/.test(p.sourceCommit) || p.licenseFile !== 'firstmate/LICENSE') process.exit(1);
+if (!/^[0-9a-f]{40}$/.test(p.sourceCommit) || !/^[0-9a-f]{40}$/.test(p.sourceTree) ||
+    !/^[0-9a-f]{64}$/.test(p.licenseSha256) || p.vendoredPath !== 'firstmate' ||
+    p.licenseFile !== 'firstmate/LICENSE' || p.license !== 'MIT' ||
+    p.vendoring?.method !== 'copy' || !Array.isArray(p.vendoring.excluded) ||
+    p.vendoring.excluded.length !== 1 || p.vendoring.excluded[0] !== '.git' ||
+    !/^[0-9a-f]{40}$/.test(p.vendoring.clerkMeshImportCommit || '')) process.exit(1);
+const root = path.dirname(provenancePath);
+const licensePath = path.resolve(root, p.licenseFile);
+if (licensePath !== path.join(root, 'firstmate', 'LICENSE')) process.exit(1);
+const digest = crypto.createHash('sha256').update(fs.readFileSync(licensePath)).digest('hex');
+if (digest !== p.licenseSha256) process.exit(1);
 NODE
 }
 
