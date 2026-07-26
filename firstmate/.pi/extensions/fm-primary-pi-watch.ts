@@ -1,7 +1,7 @@
 // Firstmate primary watcher bridge for Pi.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
@@ -72,6 +72,8 @@ const retryMaxMs = positiveInteger("FM_WATCH_REARM_RETRY_MAX_MS", 4000);
 const retryLimit = positiveInteger("FM_WATCH_REARM_RETRY_LIMIT", 5);
 const armReadyTimeoutMs = positiveInteger("FM_PI_ARM_READY_TIMEOUT_MS", 12000);
 const armRetireTimeoutMs = positiveInteger("FM_WATCH_ARM_RETIRE_TIMEOUT_MS", 1000);
+const lifecycleLogMaxBytes = positiveInteger("FM_WATCH_LIFECYCLE_LOG_MAX_BYTES", 262144);
+const lifecycleLogRetainLines = positiveInteger("FM_WATCH_LIFECYCLE_LOG_RETAIN_LINES", 2000);
 const repairOnlyHint = "call fm_watch_arm_pi again only after a later notification says the cycle is missing, failed, or unhealthy";
 
 let child: ChildProcess | null = null;
@@ -121,6 +123,25 @@ function lockOwnership(): LockOwnership {
   return pidAlive(lockPid) ? "other" : "missing";
 }
 
+function rotateLifecycleLogIfNeeded(): void {
+  let size = 0;
+  try {
+    size = statSync(lifecycleLog).size;
+  } catch {
+    return;
+  }
+  if (size < lifecycleLogMaxBytes) return;
+  try {
+    const lines = readFileSync(lifecycleLog, "utf8").split("\n").filter((line) => line.length > 0);
+    const retained = lines.slice(-lifecycleLogRetainLines).join("\n");
+    const tmpPath = `${lifecycleLog}.tmp`;
+    writeFileSync(tmpPath, retained ? `${retained}\n` : "");
+    renameSync(tmpPath, lifecycleLog);
+  } catch {
+    // Rotation is best-effort and must never interrupt watcher supervision.
+  }
+}
+
 function logLifecycle(event: string, details: Record<string, unknown> = {}): void {
   try {
     mkdirSync(state, { recursive: true });
@@ -131,6 +152,7 @@ function logLifecycle(event: string, details: Record<string, unknown> = {}): voi
       parentPid: process.ppid,
       ...details,
     })}\n`);
+    rotateLifecycleLogIfNeeded();
   } catch {
     // Diagnostics must never interrupt watcher supervision or shutdown.
   }
@@ -390,15 +412,18 @@ export default function (pi: ExtensionAPI) {
       resolveClosed();
       settleReadiness(false);
       releaseChild();
+      const classification = stopping ? null : classifyClose(stdout, stderr, code, signal);
       logLifecycle("arm-closed", {
         armId: id,
         armPid: armChild.pid ?? null,
         code,
         signal,
         extensionStopping: stopping,
+        ...(classification
+          ? { classification: classification.kind, classificationMessage: classification.message.slice(0, 500) }
+          : {}),
       });
-      if (stopping) return;
-      const classification = classifyClose(stdout, stderr, code, signal);
+      if (stopping || !classification) return;
       const predecessor = String(armChild.pid ?? "");
       if (classification.kind === "actionable") {
         retryFailures = 0;
