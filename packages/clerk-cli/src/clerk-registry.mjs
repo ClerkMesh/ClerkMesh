@@ -43,7 +43,9 @@ export async function parseClerkRegistry({ registryPath, clerksRoot }) {
 
   const escalation = records.find((record) => record.name === "escalation");
   if (!escalation || escalation.status !== "active" || !escalation.builtIn) fail("Escalation Clerk must be active and built-in");
-  if (records.some((record) => record.name !== "escalation" && record.builtIn)) fail("only Escalation Clerk may be built-in");
+  const research = records.find((record) => record.name === "research");
+  if (research && (research.status !== "active" || !research.builtIn)) fail("Research Clerk must be active and built-in");
+  if (records.some((record) => !["escalation", "research"].includes(record.name) && record.builtIn)) fail("only bundled Clerks may be built-in");
   return Object.freeze(records);
 }
 
@@ -87,6 +89,8 @@ export function renderClerkRegistry(records) {
   });
   const escalation = records.find((record) => record.name === "escalation");
   if (!escalation || escalation.status !== "active" || !escalation.builtIn) fail("Escalation Clerk must be active and built-in");
-  if (records.some((record) => record.name !== "escalation" && record.builtIn)) fail("only Escalation Clerk may be built-in");
+  const research = records.find((record) => record.name === "research");
+  if (research && (research.status !== "active" || !research.builtIn)) fail("Research Clerk must be active and built-in");
+  if (records.some((record) => !["escalation", "research"].includes(record.name) && record.builtIn)) fail("only bundled Clerks may be built-in");
   return `${HEADER}${rows.join("\n")}\n`;
 }

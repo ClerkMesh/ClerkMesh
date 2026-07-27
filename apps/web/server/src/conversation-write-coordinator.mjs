@@ -32,6 +32,7 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
 
   let startupPromise;
   let selectedSessionId;
+  let canonicalSessionId;
   const requests = new Map();
 
   async function start(sessionId) {
@@ -40,7 +41,11 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
       throw new ConversationWriteError("session-not-found", "The selected Pi session is unavailable.");
     }
     // Only the trusted server-side session record crosses the launch boundary.
-    return startPrimary({ session });
+    const primary = await startPrimary({ session });
+    canonicalSessionId = typeof primary?.sessionId === "string" && primary.sessionId.length > 0
+      ? primary.sessionId
+      : sessionId;
+    return primary;
   }
 
   return Object.freeze({
@@ -60,7 +65,7 @@ export function createConversationWriteCoordinator({ resolveSession, startPrimar
       }
 
       const promise = (async () => {
-        if (startupPromise && selectedSessionId !== sessionId) {
+        if (startupPromise && sessionId !== selectedSessionId && sessionId !== canonicalSessionId) {
           throw new ConversationWriteError("session-locked", "Session selection is locked while Primary is running.");
         }
         if (!startupPromise) {

@@ -20,6 +20,10 @@ _Avoid_: Employee, Worker, Crewmate, Clone
 The built-in, non-removable, human-executed Clerk selected for an execution only when the Captain explicitly chooses to handle work no specialist Clerk can fully cover. An unmatched or ambiguous request otherwise remains in the Primary conversation for clarification.
 _Avoid_: Unknown Clerk, Duty Clerk, Generalist
 
+**Research Clerk**:
+The built-in, non-removable, Agent-executed Clerk for bounded source discovery, verification, comparison, and cited reporting when no more specialized Clerk completely matches. It gathers evidence but does not implement work, make product decisions, or act as a generalist.
+_Avoid_: Search Slot, Default Clerk, Generalist
+
 **Clerk Bootstrap**:
 A Captain-reviewed Primary control-plane operation that creates the first or a later Clerk through the canonical validation, Git approval, and registry lifecycle without selecting a Clerk or creating a Task, Brief, or Worker. Bootstrap establishes an execution identity; it does not perform the professional work that identity may later undertake.
 _Avoid_: Admin Clerk, Bootstrap Clerk, Clerk Task

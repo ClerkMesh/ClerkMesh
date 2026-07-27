@@ -3,6 +3,9 @@
 /clerkmesh-state/
 /cache/
 node_modules/
+/.firecrawl/
+/.scratch/clerkmesh-web.log
+/.scratch/clerkmesh-web.pid
 
 # Firstmate is vendored source, but its operational home data is local.
 /firstmate/data/

@@ -42,8 +42,13 @@ async function waitSent(child, count) {
   assert.equal((await initialized).commands.length, 1);
   assert.equal(events.length, 1);
 
+  const statePromise = rpc.getState();
+  const state = await waitSent(child, 3);
+  child.stdout.write(`${JSON.stringify({ type: "response", id: state.id, command: "get_state", success: true, data: { sessionId: "active-session", sessionFile: "/private/session.jsonl" } })}\n`);
+  assert.deepEqual(await statePromise, { sessionId: "active-session" }, "state exposes only the opaque session identity");
+
   const prompted = rpc.prompt("Captain message");
-  const prompt = await waitSent(child, 3);
+  const prompt = await waitSent(child, 4);
   assert.equal(prompt.message, "Captain message");
   child.stdout.write(`${JSON.stringify({ type: "response", id: prompt.id, command: "prompt", success: true })}\n`);
   assert.equal(await prompted, undefined);

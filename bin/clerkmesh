@@ -76,8 +76,58 @@ No additional capability material is available.
 EOF
 }
 
-emit_registry() {
+emit_research_clerk() {
+  cat <<'EOF'
+---
+name: research
+description: >-
+  Source-backed investigation across public documentation, repositories, and the web when no more specialized Clerk completely matches.
+execution: agent
+---
+
+# Role
+Produce bounded, source-backed research that answers the Task's stated questions.
+
+# Capabilities
+Search public sources, inspect public repositories and documentation, compare evidence, identify uncertainty, and write a concise research report with citations.
+
+# Boundaries
+Do not implement, modify Project content, design the final product, make Captain decisions, handle credentials, or claim expertise not supported by sources. Yield to any active specialist Clerk that completely matches the work.
+
+# Working Style
+Start from the exact research questions, prefer primary sources, distinguish evidence from inference, record URLs and access dates, and report gaps rather than guessing.
+
+# Instructions
+Use only tools available to the Worker. Keep collection proportional to the Task, cross-check consequential claims, and finish with findings, sources, uncertainties, and recommended next questions.
+
+# Context
+No bundled domain knowledge is provided; use current authoritative sources for each execution.
+EOF
+}
+
+emit_registry_legacy() {
   printf '# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|\n| escalation | %s | active | true |\n' "$CLERKMESH_CLERKS/escalation"
+}
+
+emit_registry() {
+  emit_registry_legacy
+  printf '| research | %s | active | true |\n' "$CLERKMESH_CLERKS/research"
+}
+
+validate_registry_layout() {
+  registry=$1
+  expected_header=$(printf '# Clerk registry v1\n\n| name | path | status | built-in |\n|---|---|---|---|')
+  actual_header=$(head -n 4 "$registry" 2>/dev/null) || return 1
+  [ "$actual_header" = "$expected_header" ] || return 1
+  escalation_row="| escalation | $CLERKMESH_CLERKS/escalation | active | true |"
+  [ "$(grep -Fxc "$escalation_row" "$registry" 2>/dev/null)" = 1 ] || return 1
+  research_row="| research | $CLERKMESH_CLERKS/research | active | true |"
+  research_count=$(grep -Fxc "$research_row" "$registry" 2>/dev/null || true)
+  [ "$research_count" = 0 ] || [ "$research_count" = 1 ] || return 1
+  tail -n +5 "$registry" | while IFS= read -r row; do
+    [ "$row" = "$escalation_row" ] || [ "$row" = "$research_row" ] || \
+      printf '%s\n' "$row" | grep -Eq '^\| [a-z0-9]+(-[a-z0-9]+)* \| /[^|]+ \| (active|archived) \| false \|$' || exit 1
+  done
 }
 
 validate_state_directories() {
@@ -116,6 +166,20 @@ validate_escalation() {
     fatal "conflicting current-version Escalation Clerk at $escalation"
 }
 
+validate_research() {
+  research="$CLERKMESH_CLERKS/research"
+  [ -d "$research" ] && [ ! -L "$research" ] && [ -d "$research/.git" ] && [ ! -L "$research/.git" ] && \
+    [ -f "$research/CLERK.md" ] && [ ! -L "$research/CLERK.md" ] || \
+    fatal "conflicting current-version Research Clerk at $research"
+  emit_research_clerk | cmp -s - "$research/CLERK.md" || fatal "conflicting current-version Research Clerk at $research"
+  [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$research" rev-list --count HEAD 2>/dev/null)" = 1 ] && \
+    [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$research" symbolic-ref --short HEAD 2>/dev/null)" = main ] && \
+    [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$research" ls-tree -r --name-only HEAD 2>/dev/null)" = CLERK.md ] && \
+    [ "$(GIT_OPTIONAL_LOCKS=0 git -C "$research" rev-parse HEAD:CLERK.md 2>/dev/null)" = "$(emit_research_clerk | git hash-object --stdin)" ] && \
+    [ -z "$(GIT_OPTIONAL_LOCKS=0 git -C "$research" status --porcelain --untracked-files=all 2>/dev/null)" ] || \
+    fatal "conflicting current-version Research Clerk at $research"
+}
+
 preflight_init_state() {
   validate_state_directories
   marker="$CLERKMESH_DATA/.clerkmesh-version"
@@ -132,15 +196,15 @@ preflight_init_state() {
 
   registry="$CLERKMESH_DATA/clerks.md"
   if path_exists "$registry"; then
-    if [ ! -f "$registry" ] || [ -L "$registry" ] || ! emit_registry | cmp -s - "$registry"; then
+    if [ ! -f "$registry" ] || [ -L "$registry" ] || ! validate_registry_layout "$registry"; then
       fatal "conflicting current-version Clerk registry at $registry"
     fi
   fi
 
   escalation="$CLERKMESH_CLERKS/escalation"
-  if path_exists "$escalation"; then
-    validate_escalation
-  fi
+  if path_exists "$escalation"; then validate_escalation; fi
+  research="$CLERKMESH_CLERKS/research"
+  if path_exists "$research"; then validate_research; fi
 }
 
 init() {
@@ -165,9 +229,22 @@ init() {
     git -C "$escalation" commit -q -m "Initialize built-in Escalation Clerk"
   fi
 
+  research="$CLERKMESH_CLERKS/research"
+  if ! path_exists "$research"; then
+    mkdir -p "$research"
+    emit_research_clerk > "$research/CLERK.md"
+    git -C "$research" init -q -b main
+    git -C "$research" config user.name "ClerkMesh"
+    git -C "$research" config user.email "clerkmesh@localhost"
+    git -C "$research" add CLERK.md
+    git -C "$research" commit -q -m "Initialize built-in Research Clerk"
+  fi
+
   registry="$CLERKMESH_DATA/clerks.md"
   if ! path_exists "$registry"; then
     emit_registry > "$registry"
+  elif ! grep -Fq "| research | $CLERKMESH_CLERKS/research | active | true |" "$registry"; then
+    printf '| research | %s | active | true |\n' "$CLERKMESH_CLERKS/research" >> "$registry"
   fi
   marker="$CLERKMESH_DATA/.clerkmesh-version"
   if ! path_exists "$marker"; then
@@ -188,7 +265,9 @@ require_initialized() {
   [ -f "$CLERKMESH_DATA/clerks.md" ] && [ ! -L "$CLERKMESH_DATA/clerks.md" ] || \
     fatal "incomplete initialized Clerk registry; run bin/clerkmesh init"
   path_exists "$CLERKMESH_CLERKS/escalation" || fatal "incomplete initialized Escalation Clerk; run bin/clerkmesh init"
+  path_exists "$CLERKMESH_CLERKS/research" || fatal "incomplete initialized Research Clerk; run bin/clerkmesh init"
   validate_escalation
+  validate_research
 }
 
 launch_primary_tui() {

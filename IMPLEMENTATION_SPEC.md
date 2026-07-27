@@ -68,7 +68,7 @@ clerkmesh/
 
 - **INIT-001**：开始实现时从 Firstmate upstream 默认分支当时最新 HEAD 复制源码，验证默认分支 HEAD，并记录 repository URL、完整 SHA、UTC 复制时间、许可证和 attribution。
 - **INIT-002**：研究 SHA 只作证据，不得替代最终 `firstmate.provenance.json`。
-- **INIT-003**：`bin/clerkmesh init` 必须显式、幂等地验证 provenance、目录布局、写权限和依赖，创建受支持的数据目录、registry 及不可归档的 Escalation Clerk；不得启动任何进程。
+- **INIT-003**：`bin/clerkmesh init` 必须显式、幂等地验证 provenance、目录布局、写权限和依赖，创建受支持的数据目录、registry 及不可归档的内置 Escalation Clerk 与 Research Clerk；不得启动任何进程。
 - **INIT-004**：`web` 和 `primary --tui` 在未初始化时必须明确失败，不得懒初始化。
 - **INIT-005**：V1 不迁移任意既有 Firstmate Home。发现未知、冲突或不符合当前契约的状态时必须拒绝并报告，不得猜测迁移；符合当前版本的数据可由幂等 `init` 补齐缺失项。
 
@@ -143,6 +143,7 @@ Foreground Node Web process
 - **CLERK-003**：registry 只保存 name、canonical path、`active|archived` 与 built-in；普通 Clerk 只归档，同名不得复用。
 - **CLERK-004**：Escalation Clerk 必须是内置、human、不可删除、不可归档，且不得被当作普通能力匹配成功。
 - **CLERK-005**：只有经 Captain 审阅并提交、且由 `skills/*/SKILL.md` 明确引用的脚本是批准能力；其他代码块只是内容。Clerk 内容不得扩大 Worker 原权限。
+- **CLERK-006**：Research Clerk 必须是内置、Agent-executed、不可删除、不可归档，且不得被创建或注册为普通 Clerk。与 Escalation Clerk 不同，Research Clerk 参与普通语义匹配：仅在没有更专精 Clerk 完全匹配当前执行时，才作为有界的来源发现、核实、比较与引用报告后备被选中；不得承担实现、产品决策或泛化通才职责。
 
 ### 7.2 Lifecycle CLI
 

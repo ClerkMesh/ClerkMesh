@@ -29,8 +29,10 @@ export function createPiPrimarySupervisor({ spawnPrimary, eventProjection, requi
         child,
         onEvent(event) { projectPiRpcEvent(eventProjection, event); },
       });
+      let sessionId;
       try {
         await rpc.initialize({ sessionPath: session?.path ?? null, requiredCommand });
+        ({ sessionId } = await rpc.getState());
         // Rebuild only durable visible history from Pi after a Web-process
         // restart. Stream fragments, statuses, and diagnostics are not
         // persisted by ClerkMesh and therefore are never synthesized here.
@@ -44,7 +46,7 @@ export function createPiPrimarySupervisor({ spawnPrimary, eventProjection, requi
         recordOffline();
         throw error;
       }
-      return Object.freeze({ rpc, child });
+      return Object.freeze({ rpc, child, sessionId });
     })();
     return startPromise;
   }

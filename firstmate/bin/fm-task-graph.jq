@@ -13,7 +13,7 @@ def phase($b; $r):
     elif ($r.hints.pending_decision // false) then "awaiting_decision"
     elif (($b.unresolved_blocker_ids // []) | length) > 0 then "awaiting_dependency"
     elif $s == "working" then "executing"
-    elif ($s == "parked" or $s == "blocked" or $s == "paused") then "awaiting_decision"
+    elif ($s == "parked" or $s == "blocked" or $s == "paused") then "failed"
     elif $b.state == "in_flight" then "dispatched"
     elif $b.state == "queued" then "ready"
     else "unknown" end;
